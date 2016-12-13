@@ -29,9 +29,9 @@ contract Presale {
         contract_deploy_date = now;
     }
 	
-	function has_presale_started() private constant returns (bool) {
-	    return block.number >= presale_start_block;
-	}
+    function has_presale_started() private constant returns (bool) {
+        return block.number >= presale_start_block;
+    }
     
     function has_presale_time_ended() private constant returns (bool) {
         return block.number > presale_end_block;
@@ -46,23 +46,23 @@ contract Presale {
     }
     
     // Accept ETH while presale is active or until maximum goal is reached.
-	function () payable {
-	    // check if presale has started
+    function () payable {
+        // check if presale has started
         if (!has_presale_started()) throw;
 	    
-	    // check if presale date is not over
-	    if (has_presale_time_ended()) throw;
+        // check if presale date is not over
+        if (has_presale_time_ended()) throw;
 
-	    // check if max goal is not reached
-	    if (is_max_goal_reached()) throw;
+        // check if max goal is not reached
+        if (is_max_goal_reached()) throw;
 	    
-	    // don`t accept transactions with zero value
-	    if (msg.value == 0) throw;
+        // don`t accept transactions with zero value
+        if (msg.value == 0) throw;
 	    
-	    // set data
-	    balances[msg.sender] += msg.value;
-	    transfered_total += msg.value;
-	    balances_count += 1;
+        // set data
+        balances[msg.sender] += msg.value;
+        transfered_total += msg.value;
+        balances_count += 1;
     }
     
     // Transfer ETH to Mysterium project wallet, as soon as minimum goal is reached.
