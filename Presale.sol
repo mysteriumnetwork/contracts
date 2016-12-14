@@ -33,8 +33,8 @@ contract Presale {
     }
 	
     function has_presale_started() private constant returns (bool) {
-	return block.number >= presale_start_block;
-    }
+	    return block.number >= presale_start_block;
+	}
     
     function has_presale_time_ended() private constant returns (bool) {
         return block.number > presale_end_block;
@@ -79,29 +79,32 @@ contract Presale {
         if (!project_wallet.send(this.balance)) throw;
     }
     
-    // Refund ETH in case the minimum goal was not reached after presale end day.
-    // Refund will be available for two months after presale end day.
-    // ETH will be sent Mysterium project wallet in case anything left unclaimed after two months period.
+    // Refund ETH in case minimum goal was not reached during presale.
+    // Refund will be available for two months window after presale.
     function refund() {
         if (!has_presale_time_ended()) throw;
         if (is_min_goal_reached()) throw;
+        if (now - contract_deploy_date > 120 days) throw;
         
-        if (now - contract_deploy_date < 120 days) {
-            var amount = balances[msg.sender];
-            
-            // check if sender has balance
-            if (amount == 0) throw;
-            
-            // reset balance
-            balances[msg.sender] = 0;
-            
-            // actual refund
-            if (!msg.sender.send(amount)) throw;
-            
-        } else {
-            if (this.balance == 0) throw;
-            // transfer left ETH to Mysterium project wallet
-            if (!project_wallet.send(this.balance)) throw;
-        }
+        var amount = balances[msg.sender];
+        // check if sender has balance
+        if (amount == 0) throw;
+        
+        // reset balance
+        balances[msg.sender] = 0;
+        
+        // actual refund
+        if (!msg.sender.send(amount)) throw;
+    }
+    
+    // In case any ETH has left unclaimed after two months window, send them to Mysterium project wallet.
+    function transfer_left_funds_to_project() {
+        if (!has_presale_time_ended()) throw;
+        if (is_min_goal_reached()) throw;
+        if (now - contract_deploy_date <= 120 days) throw;
+        
+        if (this.balance == 0) throw;
+        // transfer left ETH to Mysterium project wallet
+        if (!project_wallet.send(this.balance)) throw;
     }
 }
