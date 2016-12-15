@@ -3,11 +3,7 @@
 pragma solidity ^0.4.6;
 
 contract Presale {
-    // TODO: external needed ?
     mapping (address => uint) public balances;
-    
-    // TODO: do we need counter ?
-    //uint public balances_count = 0;
     uint public transfered_total = 0;
     
     uint public constant min_goal_amount = 2000 ether;
@@ -19,7 +15,12 @@ contract Presale {
     uint public presale_start_block;
     uint public presale_end_block;
     
-    uint public contract_deploy_date;
+    // approximate blocks count in 2 months 
+    uint constant blocks_in_two_months = 351558;
+    
+    // block number of the end of refund window, 
+    // which will occur in the end of 2 months after presale
+    uint public refund_window_end_block;
     
     function Presale(uint _start_block, uint _end_block, address _project_wallet) {
         if (_start_block <= block.number) throw;
@@ -29,12 +30,12 @@ contract Presale {
         presale_start_block = _start_block;
         presale_end_block = _end_block;
         project_wallet = _project_wallet;
-	contract_deploy_date = now;
+	refund_window_end_block = presale_end_block + blocks_in_two_months;
     }
 	
     function has_presale_started() private constant returns (bool) {
-	    return block.number >= presale_start_block;
-	}
+	return block.number >= presale_start_block;
+    }
     
     function has_presale_time_ended() private constant returns (bool) {
         return block.number > presale_end_block;
@@ -45,7 +46,7 @@ contract Presale {
     }
     
     function is_max_goal_reached() private constant returns (bool) {
-        return transfered_total > max_goal_amount;
+        return transfered_total >= max_goal_amount;
     }
     
     // Accept ETH while presale is active or until maximum goal is reached.
@@ -58,16 +59,23 @@ contract Presale {
 	    
 	// don`t accept transactions with zero value
 	if (msg.value == 0) throw;
-	    
-	// set data
-	balances[msg.sender] += msg.value;
-	transfered_total += msg.value;
-	    
-	// TODO: do not count same balance twice
-	//balances_count += 1;
-	    
-	// check if max goal is not reached
+
+        // check if max goal is not reached
 	if (is_max_goal_reached()) throw;
+        
+        if (transfered_total + msg.value > max_goal_amount) {
+            // return change
+	    var change_to_return = transfered_total + msg.value - max_goal_amount;
+	    if (!msg.sender.send(change_to_return)) throw;
+            
+            var to_add = max_goal_amount - transfered_total;
+            balances[msg.sender] += to_add;
+	    transfered_total += to_add;
+        } else {
+            // set data
+	    balances[msg.sender] += msg.value;
+	    transfered_total += msg.value;
+        }
     }
     
     // Transfer ETH to Mysterium project wallet, as soon as minimum goal is reached.
@@ -84,7 +92,7 @@ contract Presale {
     function refund() {
         if (!has_presale_time_ended()) throw;
         if (is_min_goal_reached()) throw;
-        if (now - contract_deploy_date > 120 days) throw;
+        if (block.number > refund_window_end_block) throw;
         
         var amount = balances[msg.sender];
         // check if sender has balance
@@ -101,7 +109,7 @@ contract Presale {
     function transfer_left_funds_to_project() {
         if (!has_presale_time_ended()) throw;
         if (is_min_goal_reached()) throw;
-        if (now - contract_deploy_date <= 120 days) throw;
+        if (block.number <= refund_window_end_block) throw;
         
         if (this.balance == 0) throw;
         // transfer left ETH to Mysterium project wallet
