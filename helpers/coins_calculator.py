@@ -11,7 +11,7 @@ REGULAR_PRICE_MULTIPLIER = 1.2
 eth_chf_price = 88
 
 # smart contract knows this value after raising is finished
-amount_raised_chf = 6000000
+amount_raised_chf = 10000000
 
 
 
@@ -93,5 +93,26 @@ print 'Foundation coins: {}'.format(foundation_coins)
 # step 11, J6: Calculate Team coins using K6 and J3
 team_coins = TEAM_PERCENTAGE * total_coins / 100
 print 'Team coins: {}'.format(team_coins)
+
+
+
+########################
+print
+
+
+
+# seed coins to vault1 (no-lock) 1x
+vault1 = seed_coins / seed_multiplier
+print 'Vault1 seed coins (no-lock): {}'.format(vault1)
+
+
+# seed coins to vault2 (with-lock) above 1x
+vault2 = seed_coins - seed_coins / seed_multiplier
+print 'Vault2 seed coins (with-lock): {}'.format(vault2)
+
+
+
+
+
 
 
