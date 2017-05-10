@@ -1,12 +1,14 @@
 # hardcode constants to smart contract
-SOFT_CAP = 6000000
-MIN_SOFT_CAP = 2000000
+SOFT_CAP_CHF = 6000000
+MIN_SOFT_CAP_CHF = 2000000
 SEED_RAISED_ETH = 6000
 FOUNDATION_PERCENTAGE = 9
 TEAM_PERCENTAGE = 10
+EARLYBIRD_PRICE_MULTIPLIER = 1
+REGULAR_PRICE_MULTIPLIER = 1.2
 
 # set parameter before Token Sale
-eth_price_chf = 88
+eth_chf_price = 88
 
 # smart contract knows this value after raising is finished
 amount_raised_chf = 6000000
@@ -14,18 +16,18 @@ amount_raised_chf = 6000000
 
 
 # step 1, E6: Calculate "EarlyBird" coins (1chf = 1.2 myst), based on C10
-if amount_raised_chf <= SOFT_CAP:
-    earlybird_coins = amount_raised_chf * 1.2
+if amount_raised_chf <= SOFT_CAP_CHF:
+    earlybird_coins = amount_raised_chf * REGULAR_PRICE_MULTIPLIER
 else:
-    earlybird_coins = SOFT_CAP * 1.2
+    earlybird_coins = SOFT_CAP_CHF * REGULAR_PRICE_MULTIPLIER
 
 print 'Early Bird Coins: {}'.format(earlybird_coins)
 
 
 # step 2, F6: Calculate Regular investor coins (1chf = 1myst), based on C11
 regular_coins = 0
-if amount_raised_chf > SOFT_CAP:
-    regular_coins = (amount_raised_chf - SOFT_CAP) * 1
+if amount_raised_chf > SOFT_CAP_CHF:
+    regular_coins = (amount_raised_chf - SOFT_CAP_CHF) * EARLYBIRD_PRICE_MULTIPLIER
 
 print 'Regular Coins: {}'.format(regular_coins)
 
@@ -33,31 +35,31 @@ print 'Regular Coins: {}'.format(regular_coins)
 # step 3, G5: Define Seed MULTIPLIER, based on C8 - raised amount during ICO
 # 2M - 1x
 # 6M - 5x
-if amount_raised_chf <= MIN_SOFT_CAP:
+if amount_raised_chf <= MIN_SOFT_CAP_CHF:
     seed_multiplier = 1
-elif amount_raised_chf > MIN_SOFT_CAP and amount_raised_chf < SOFT_CAP:
+elif amount_raised_chf > MIN_SOFT_CAP_CHF and amount_raised_chf < SOFT_CAP_CHF:
     seed_multiplier = amount_raised_chf / 1000000.0 - 1
-elif amount_raised_chf >= SOFT_CAP:
+elif amount_raised_chf >= SOFT_CAP_CHF:
     seed_multiplier = 5
 
 print 'Seed Multiplier: {}x'.format(seed_multiplier)
 
 
 # step 4, G6: Calculate Seed Round Tokens using G5
-seed_coins = SEED_RAISED_ETH * eth_price_chf * seed_multiplier
+seed_coins = SEED_RAISED_ETH * eth_chf_price * seed_multiplier
 print 'Seed Coins: {}'.format(seed_coins)
 
 
 # step 5, H3: Calculate PERCENTAGE of "tokens reserved for II'nd round", using C8
 # 2M - 50%
 # 6M - 15%
-if amount_raised_chf <= MIN_SOFT_CAP:
+if amount_raised_chf <= MIN_SOFT_CAP_CHF:
     future_round_percentage = 50
-elif amount_raised_chf > MIN_SOFT_CAP and amount_raised_chf < SOFT_CAP:
+elif amount_raised_chf > MIN_SOFT_CAP_CHF and amount_raised_chf < SOFT_CAP_CHF:
     # calculate proportionally
     # y = 67.5 - 8.75x
     future_round_percentage = 67.5 - 8.75 * (amount_raised_chf / 1000000.0)
-elif amount_raised_chf >= SOFT_CAP:
+elif amount_raised_chf >= SOFT_CAP_CHF:
     future_round_percentage = 15
 
 print 'Future reserved Coins percentage: {}%'.format(future_round_percentage)
