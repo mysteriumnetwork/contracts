@@ -1,6 +1,6 @@
 pragma solidity ^0.4.7;
 
-import "ico/contracts/Crowdsale.sol";
+import "./Crowdsale.sol";
 
 contract MysteriumCrowdsale is Crowdsale {
 }
