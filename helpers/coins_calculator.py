@@ -4,22 +4,22 @@ MIN_SOFT_CAP_CHF = 2000000
 SEED_RAISED_ETH = 6000
 FOUNDATION_PERCENTAGE = 9
 TEAM_PERCENTAGE = 10
-EARLYBIRD_PRICE_MULTIPLIER = 1
-REGULAR_PRICE_MULTIPLIER = 1.2
+EARLYBIRD_PRICE_MULTIPLIER = 1.2
+REGULAR_PRICE_MULTIPLIER = 1
 
 # set parameter before Token Sale
 eth_chf_price = 88
 
 # smart contract knows this value after raising is finished
-amount_raised_chf = 10000000
+amount_raised_chf = 80000000
 
 
 
 # step 1, E6: Calculate "EarlyBird" coins (1chf = 1.2 myst), based on C10
 if amount_raised_chf <= SOFT_CAP_CHF:
-    earlybird_coins = amount_raised_chf * REGULAR_PRICE_MULTIPLIER
+    earlybird_coins = amount_raised_chf * EARLYBIRD_PRICE_MULTIPLIER
 else:
-    earlybird_coins = SOFT_CAP_CHF * REGULAR_PRICE_MULTIPLIER
+    earlybird_coins = SOFT_CAP_CHF * EARLYBIRD_PRICE_MULTIPLIER
 
 print 'Early Bird Coins: {}'.format(earlybird_coins)
 
@@ -27,7 +27,7 @@ print 'Early Bird Coins: {}'.format(earlybird_coins)
 # step 2, F6: Calculate Regular investor coins (1chf = 1myst), based on C11
 regular_coins = 0
 if amount_raised_chf > SOFT_CAP_CHF:
-    regular_coins = (amount_raised_chf - SOFT_CAP_CHF) * EARLYBIRD_PRICE_MULTIPLIER
+    regular_coins = (amount_raised_chf - SOFT_CAP_CHF) * REGULAR_PRICE_MULTIPLIER
 
 print 'Regular Coins: {}'.format(regular_coins)
 
@@ -109,10 +109,4 @@ print 'Vault1 seed coins (no-lock): {}'.format(vault1)
 # seed coins to vault2 (with-lock) above 1x
 vault2 = seed_coins - seed_coins / seed_multiplier
 print 'Vault2 seed coins (with-lock): {}'.format(vault2)
-
-
-
-
-
-
 
