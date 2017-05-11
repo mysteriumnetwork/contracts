@@ -38,4 +38,23 @@ def token(chain, team_multisig):
     return contract
 
 
+@pytest.fixture()
+def crowdsale(chain, team_multisig):
+    """Py.test fixture for creating a Mysterium crowdsale contract."""
+
+    kwargs = {
+        "_token": 0, 
+        "_pricingStrategy": 0, 
+        "_multisigWallet": 0, 
+        "_start": 0, 
+        "_end": 0, 
+        "_minimumFundingGoal": 0,
+    }
+
+    tx = {
+        "from": team_multisig
+    }
+
+    contract, hash = chain.provider.deploy_contract('MysteriumCrowdsale', deploy_kwargs=kwargs, deploy_transaction=tx)
+    return contract
 
