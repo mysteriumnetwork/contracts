@@ -1,4 +1,42 @@
+import datetime
 
+import pytest
+from decimal import Decimal
+from eth_utils import to_wei
+from ethereum.tester import TransactionFailed
+from web3.contract import Contract
+
+
+from ico.tests.utils import time_travel
+from ico.state import CrowdsaleState
+from ico.utils import decimalize_token_amount
+
+@pytest.fixture
+def crowdsale(chain, uncapped_token, flat_pricing, preico_starts_at, preico_ends_at, preico_funding_goal, team_multisig) -> Contract:
+    token = uncapped_token
+
+    args = [
+        token.address,
+        flat_pricing.address,
+        team_multisig,
+        preico_starts_at,
+        preico_ends_at,
+        preico_funding_goal,
+        preico_funding_goal
+    ]
+    tx = {
+        "from": team_multisig,
+    }
+    contract, hash = chain.provider.deploy_contract('MysteriumCrowdsale', deploy_args=args, deploy_transaction=tx)
+
+    assert contract.call().owner() == team_multisig
+    assert not token.call().released()
+
+    # Allow pre-ico contract to do mint()
+    token.transact({"from": team_multisig}).setMintAgent(contract.address, True)
+    assert token.call().mintAgents(contract.address) == True
+
+    return contract
 
 def test_distribution_700k(crowdsale, team_multisig):
     # 700K
@@ -22,7 +60,6 @@ def test_distribution_700k(crowdsale, team_multisig):
     assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 0
-
 
 def test_distribution_1m(crowdsale, team_multisig):
     # 1M
@@ -95,7 +132,6 @@ def test_distribution_5m(crowdsale, team_multisig):
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 1584000
 
-
 def test_distribution_8m(crowdsale, team_multisig):
     # 8M
     crowdsale.transact().distribute(8 * 1000000, 88)
@@ -119,10 +155,3 @@ def test_distribution_8m(crowdsale, team_multisig):
 
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 2112000
-
-
-
-
-
-
-

@@ -20,8 +20,11 @@ contract MysteriumTokenDistribution is FinalizeAgent {
   /** Where we move the tokens at the end of the sale. */
   address public teamMultisig;
 
+  uint public allocatedBonus;
+  uint public bonusBasePoints;
 
-  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, address _teamMultisig) {
+
+  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, address _teamMultisig, uint _bonusBasePoints) {
     token = _token;
     crowdsale = _crowdsale;
     if(address(crowdsale) == 0) {
