@@ -20,6 +20,12 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
   uint public seed_coins_vault1;
   uint public seed_coins_vault2;
 
+  // Are we on the "end slope" (triggered after soft cap)
+  bool isEndSlope;
+
+  // Soft cap implementations
+  uint softCap;
+
 
   function distribute(uint amount_raised_chf, uint eth_chf_price) {
     // Distribute:
@@ -50,13 +56,13 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
     else {
       earlybird_coins = SOFT_CAP_CHF*multiplier + SOFT_CAP_CHF*multiplier/5;
     }
-    
+
     // step 2
     regular_coins = 0;
     if (amount_raised_chf > SOFT_CAP_CHF) {
       regular_coins = (amount_raised_chf - SOFT_CAP_CHF) * multiplier * REGULAR_PRICE_MULTIPLIER;
     }
-    
+
     // step 3
     // 2M - 1x
     // 6M - 5x
@@ -64,11 +70,11 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
         seed_multiplier = 1 * multiplier;
     } else if (amount_raised_chf > MIN_SOFT_CAP_CHF && amount_raised_chf < SOFT_CAP_CHF) {
         seed_multiplier = (amount_raised_chf / 1000000 - 1) * multiplier;
-    
+
     } else if (amount_raised_chf >= SOFT_CAP_CHF) {
         seed_multiplier = 5 * multiplier;
     }
-    
+
     // step 4
     seed_coins = SEED_RAISED_ETH * eth_chf_price * seed_multiplier;
 
@@ -92,16 +98,16 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
 
     // step 7
     earlybird_percentage = earlybird_coins * percentage_of_three / (earlybird_coins+regular_coins+seed_coins);
-    
-    
+
+
     // step 8
     total_coins = earlybird_coins * 100 * multiplier / earlybird_percentage;
-    
-    
+
+
     // step 9
     future_round_coins = future_round_percentage * total_coins / 100 / multiplier;
-    
-    
+
+
     // step 10
     foundation_coins = FOUNDATION_PERCENTAGE * total_coins / 100;
 
@@ -132,5 +138,24 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
 
   }
 
+  /// @dev Here you can set the softcap in weis
+  /// @param _softCap soft cap in tokens
+  function setSoftCap(uint _softCap) onlyOwner {
+    softCap = _softCap;
+  }
 
+  /// @dev EndSlope means the period after hard cap
+  function beginEndSlope() {
+    if(isEndSlope)
+      throw;
+
+    if(softCap > weiRaised)
+      throw;
+
+    // When contracts are updated from upstream, you should use:
+    // setEndsAt (now + 24 hours);
+    endsAt = now + 24 hours;
+
+    isEndSlope = true;
+  }
 }
