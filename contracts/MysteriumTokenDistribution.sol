@@ -3,6 +3,7 @@ pragma solidity ^0.4.6;
 import "./Crowdsale.sol";
 import "./CrowdsaleToken.sol";
 import "./SafeMathLib.sol";
+import "./MysteriumPricing.sol";
 import "zeppelin/contracts/ownership/Ownable.sol";
 
 /**
@@ -24,6 +25,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   uint public allocatedBonus;
   uint public bonusBasePoints;
 
+  MysteriumPricing mysteriumPricing;
+
   // Vaults:
   address earlybirdVault;
   address regularVault;
@@ -34,7 +37,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   address seedVault1;
   address seedVault2;
 
-  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, address _teamMultisig, uint _bonusBasePoints) {
+  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing, address _teamMultisig, uint _bonusBasePoints) {
     token = _token;
     crowdsale = _crowdsale;
     if(address(crowdsale) == 0) {
@@ -46,6 +49,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
       throw;
     }
 
+    mysteriumPricing = _mysteriumPricing;
     bonusBasePoints = _bonusBasePoints;
   }
 
@@ -150,15 +154,17 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
 
     // restore
     // Send to all the wallets (before dividing with multiplier?)
-    token.transfer(earlybirdVault, earlybird_coins);
-    token.transfer(regularVault, regular_coins);
-    token.transfer(seedVault, seed_coins);
-    token.transfer(futureRoundVault, future_round_coins);
-    token.transfer(foundationVault, foundation_coins);
-    token.transfer(teamVault, team_coins);
-    token.transfer(seedVault1, seed_coins_vault1);
-    token.transfer(seedVault2, seed_coins_vault2);
+    token.mint(earlybirdVault, earlybird_coins);
+    token.mint(regularVault, regular_coins);
+    token.mint(seedVault, seed_coins);
+    token.mint(futureRoundVault, future_round_coins);
+    token.mint(foundationVault, foundation_coins);
+    token.mint(teamVault, team_coins);
+    token.mint(seedVault1, seed_coins_vault1);
+    token.mint(seedVault2, seed_coins_vault2);
 
+    // Make token transferable
+    token.releaseTokenTransfer();
 
     // Then divide with multiplier
     //earlybird_coins = earlybird_coins / multiplier;
@@ -203,15 +209,12 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
       throw;
     }
 
-    // How many % of tokens the founders and others get
-    uint tokensSold = crowdsale.tokensSold();
-    allocatedBonus = tokensSold.times(bonusBasePoints) / 10000;
+    uint chfRate = mysteriumPricing.chfRate();
+    distribute(crowdsale.weiRaised()/chfRate, chfRate);
 
-    // move tokens to the team multisig wallet
-    token.mint(teamMultisig, 000);
-
-    // Make token transferable
-    token.releaseTokenTransfer();
+    // How many % of tokens the founders and others get, is this obsolete?
+    //uint tokensSold = crowdsale.tokensSold();
+    //allocatedBonus = tokensSold.times(bonusBasePoints) / 10000;
   }
 
 }

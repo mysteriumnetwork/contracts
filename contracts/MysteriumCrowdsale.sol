@@ -1,41 +1,31 @@
 pragma solidity ^0.4.7;
 
 import "./MintedTokenCappedCrowdsale.sol";
+import "./MysteriumPricing.sol";
 
 contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
   using SafeMathLib for uint;
-  uint chfRate;
+
   // Are we on the "end slope" (triggered after soft cap)
-  bool isEndSlope;
-  // Soft cap implementation
-  uint softCap;
-  // Addresses
-  address[] vaults;
+  bool softCapTriggered;
 
   function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint _maximumSellableTokens, uint _chfRate)
     MintedTokenCappedCrowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, _minimumFundingGoal, _maximumSellableTokens) {
+
     //Setting the rate here
-    setRate(_chfRate);
+    setConversionRate(_chfRate);
   }
 
-  /// @dev Here you can set the softcap in weis
-  /// @param _softCap soft cap in tokens
-  function setSoftCap(uint _softCap) onlyOwner {
-    softCap = _softCap;
+  function setConversionRate(uint _chfRate) onlyOwner {
+    MysteriumPricing(pricingStrategy).setConversionRate(_chfRate);
   }
 
-  /// @dev Here you can set the ny CHF/ETH rate
-  /// @param _chfRate The rate how many weis is one CHF
-  function setRate(uint _chfRate) onlyOwner {
-    chfRate = _chfRate;
-  }
-
-  /// @dev Function which tranforms CHF softcap to weis
-
-  /// @dev EndSlope means the period after hard cap
-  function beginEndSlope() {
-    if(isEndSlope)
+  /// @dev triggerSoftCap triggers the earlier closing time
+  function triggerSoftCap() {
+    if(softCapTriggered)
       throw;
+
+    uint softCap = MysteriumPricing(pricingStrategy).getSoftCapInWeis();
 
     if(softCap > weiRaised)
       throw;
@@ -44,6 +34,6 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
     // setEndsAt (now + 24 hours);
     endsAt = now + 24 hours;
 
-    isEndSlope = true;
+    softCapTriggered = true;
   }
 }
