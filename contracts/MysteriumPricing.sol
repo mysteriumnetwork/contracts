@@ -25,9 +25,14 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   //Address of the ICO contract:
   Crowdsale crowdsale;
 
-  function MysteriumPricing(uint _tokenPricePrimary, uint _tokenPriceSecondary, Crowdsale _crowdsale) {
+  function MysteriumPricing(uint _tokenPricePrimary, uint _tokenPriceSecondary) {
     tokenPricePrimary = _tokenPricePrimary;
     tokenPriceSecondary = _tokenPriceSecondary;
+  }
+
+  /// @dev Setting crowdsale for setConversionRate()
+  /// @param _crowdsale The address of our ICO contract
+  function setCrowdsale(Crowdsale _crowdsale) onlyOwner {
     crowdsale = _crowdsale;
   }
 

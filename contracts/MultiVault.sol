@@ -18,7 +18,7 @@ contract MultiVault is SafeMath {
 
   /** Address that can claim tokens */
   address[] addresses;
-  uint fullAmount; // What is 100%, this defines the scale, like 10000.
+  uint scale; // What is 100%, this defines the scale, like 10000.
   uint[] percents; // These defines how many percents ((fullAmount/100)*percents)
 
   /** UNIX timestamp when tokens can be claimed. */
@@ -28,7 +28,7 @@ contract MultiVault is SafeMath {
 
   /// @dev You specify here who are the owners and which are their percents.
   ///      You can also specify what is 100% (fullAmount), so this is flexible.
-  function MultiVault(StandardToken _token, uint _unlockedAt, address[] _addresses, uint[] _percents, uint _fullAmount) {
+  function MultiVault(StandardToken _token, uint _unlockedAt, address[] _addresses, uint[] _percents, uint _scale) {
     if (_addresses.length != _percents.length)
       throw;
 
@@ -37,7 +37,7 @@ contract MultiVault is SafeMath {
 
     addresses = _addresses;
     percents = _percents;
-    fullAmount = _fullAmount;
+    scale = _scale;
 
     // Sanity check
     if (address(token) == 0x0) throw;
@@ -56,7 +56,7 @@ contract MultiVault is SafeMath {
 
     // StandardToken will throw in the case of transaction fails
     for (uint i=0; i <= (addresses.length-1); i++)
-        token.transfer(addresses[i], tokenBalance/(fullAmount/percents[i]));
+      token.transfer(addresses[i], tokenBalance/(scale/percents[i]));
 
     Unlocked();
   }

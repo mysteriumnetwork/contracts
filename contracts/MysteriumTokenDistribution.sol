@@ -37,6 +37,26 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   address seedVault1;
   address seedVault2;
 
+  // Constants for distribute()
+  uint SOFT_CAP_CHF = 6000000;
+  uint MIN_SOFT_CAP_CHF = 2000000;
+  uint SEED_RAISED_ETH = 6000;
+  uint FOUNDATION_PERCENTAGE = 9;
+  uint TEAM_PERCENTAGE = 10;
+  //uint public EARLYBIRD_PRICE_MULTIPLIER = 1.2;
+  uint REGULAR_PRICE_MULTIPLIER = 1;
+  uint multiplier = 10 ** 8;
+  // Temporary variables for distribute():
+  uint public earlybird_coins;
+  uint public regular_coins;
+  uint public seed_coins;
+  uint public total_coins;
+  uint public future_round_coins;
+  uint public foundation_coins;
+  uint public team_coins;
+  uint public seed_coins_vault1;
+  uint public seed_coins_vault2;
+
   function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing, address _teamMultisig, uint _bonusBasePoints) {
     token = _token;
     crowdsale = _crowdsale;
@@ -59,31 +79,12 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // foundation coins
     // team coins
 
-    // constants
-    uint SOFT_CAP_CHF = 6000000;
-    uint MIN_SOFT_CAP_CHF = 2000000;
-    uint SEED_RAISED_ETH = 6000;
-    uint FOUNDATION_PERCENTAGE = 9;
-    uint TEAM_PERCENTAGE = 10;
-    //uint public EARLYBIRD_PRICE_MULTIPLIER = 1.2;
-    uint REGULAR_PRICE_MULTIPLIER = 1;
+
 
     uint seed_multiplier;
     uint future_round_percentage;
     uint percentage_of_three;
     uint earlybird_percentage;
-
-    uint multiplier = 10 ** 8;
-
-    uint earlybird_coins;
-    uint regular_coins;
-    uint seed_coins;
-    uint total_coins;
-    uint future_round_coins;
-    uint foundation_coins;
-    uint team_coins;
-    uint seed_coins_vault1;
-    uint seed_coins_vault2;
 
 
     // step 1
@@ -212,7 +213,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     uint chfRate = mysteriumPricing.chfRate();
     distribute(crowdsale.weiRaised()/chfRate, chfRate);
 
-    // How many % of tokens the founders and others get, is this obsolete?
+    // NOTE:
+    // How many % of tokens the founders and others get, is this obsolete? distribute() should handle this?
     //uint tokensSold = crowdsale.tokensSold();
     //allocatedBonus = tokensSold.times(bonusBasePoints) / 10000;
   }
