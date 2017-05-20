@@ -22,9 +22,6 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   /** Where we move the tokens at the end of the sale. */
   address public teamMultisig;
 
-  uint public allocatedBonus;
-  uint public bonusBasePoints;
-
   MysteriumPricing mysteriumPricing;
 
   // Vaults:
@@ -57,20 +54,14 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   uint public seed_coins_vault1;
   uint public seed_coins_vault2;
 
-  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing, address _teamMultisig, uint _bonusBasePoints) {
+  function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing) {
     token = _token;
     crowdsale = _crowdsale;
     if(address(crowdsale) == 0) {
       throw;
     }
 
-    teamMultisig = _teamMultisig;
-    if(address(teamMultisig) == 0) {
-      throw;
-    }
-
     mysteriumPricing = _mysteriumPricing;
-    bonusBasePoints = _bonusBasePoints;
   }
 
   function distribute(uint amount_raised_chf, uint eth_chf_price) {

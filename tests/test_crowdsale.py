@@ -12,12 +12,51 @@ from ico.state import CrowdsaleState
 from ico.utils import decimalize_token_amount
 
 @pytest.fixture
-def crowdsale(chain, uncapped_token, flat_pricing, preico_starts_at, preico_ends_at, preico_funding_goal, team_multisig) -> Contract:
-    token = uncapped_token
+def mysterium_token(chain, team_multisig, token_name, token_symbol, initial_supply) -> Contract:
+    """Create the token contract."""
+
+    args = ["Mysterium", "MYST", 0, 8]  # Owner set
+
+    tx = {
+        "from": team_multisig
+    }
+
+    contract, hash = chain.provider.deploy_contract('CrowdsaleToken', deploy_args=args, deploy_transaction=tx)
+    return contract
+
+@pytest.fixture()
+def mysterium_finalize_agent(chain, mysterium_token, crowdsale, mysterium_pricing) -> Contract:
+
+    # Create finalizer contract
+    args = [
+        mysterium_token.address,
+        crowdsale.address,
+        mysterium_pricing.address
+    ]
+    contract, hash = chain.provider.deploy_contract('MysteriumTokenDistribution', deploy_args=args)
+    return contract
+
+@pytest.fixture
+def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
+    """Flat pricing contact."""
+    args = [
+        preico_token_price,
+        preico_token_price*2
+    ]
+    tx = {
+        "from": team_multisig,
+    }
+    pricing_strategy, hash = chain.provider.deploy_contract('MysteriumPricing', deploy_args=args,  deploy_transaction=tx)
+    return pricing_strategy
+
+
+@pytest.fixture
+def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preico_ends_at, preico_funding_goal, team_multisig) -> Contract:
+    token = mysterium_token
 
     args = [
         token.address,
-        flat_pricing.address,
+        mysterium_pricing.address,
         team_multisig,
         preico_starts_at,
         preico_ends_at,
@@ -29,6 +68,9 @@ def crowdsale(chain, uncapped_token, flat_pricing, preico_starts_at, preico_ends
     }
     contract, hash = chain.provider.deploy_contract('MysteriumCrowdsale', deploy_args=args, deploy_transaction=tx)
 
+    mysterium_pricing.transact({"from": team_multisig}).setCrowdsale(contract.address)
+    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(to_wei(1000, "ether"))
+
     assert contract.call().owner() == team_multisig
     assert not token.call().released()
 
@@ -38,17 +80,25 @@ def crowdsale(chain, uncapped_token, flat_pricing, preico_starts_at, preico_ends
 
     return contract
 
-def test_distribution_700k(crowdsale, team_multisig):
+def test_distribution_700k(chain, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, crowdsale, team_multisig):
     # 700K
-    crowdsale.transact().distribute(700000, 88)
+    time_travel(chain, preico_starts_at + 1)
+    wei_value = preico_funding_goal
+    crowdsale.transact({"from": customer, "value": 1000000}).buy()
+    assert crowdsale.call().getState() == CrowdsaleState.Success
+    assert crowdsale.call().finalizeAgent() == mysterium_finalize_agent.address
+    crowdsale.transact({"from": team_multisig}).finalize()
+    assert crowdsale.call().getState() == CrowdsaleState.Finalized
 
-    earlybird_coins = crowdsale.call().earlybird_coins()
-    regular_coins = crowdsale.call().regular_coins()
-    seed_coins = crowdsale.call().seed_coins()
-    future_round_coins = crowdsale.call().future_round_coins()
-    foundation_coins = crowdsale.call().foundation_coins()
-    team_coins = crowdsale.call().team_coins()
-    total_coins = crowdsale.call().total_coins()
+    #mysterium_finalize_agent.transact().distribute(700000, 88)
+
+    earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
+    regular_coins = mysterium_finalize_agent.call().regular_coins()
+    seed_coins = mysterium_finalize_agent.call().seed_coins()
+    future_round_coins = mysterium_finalize_agent.call().future_round_coins()
+    foundation_coins = mysterium_finalize_agent.call().foundation_coins()
+    team_coins = mysterium_finalize_agent.call().team_coins()
+    total_coins = mysterium_finalize_agent.call().total_coins()
 
     assert earlybird_coins == 840000
     assert regular_coins == 0

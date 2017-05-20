@@ -9,15 +9,9 @@ contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
   // Are we on the "end slope" (triggered after soft cap)
   bool softCapTriggered;
 
-  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint _maximumSellableTokens, uint _chfRate)
+  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint _maximumSellableTokens)
     MintedTokenCappedCrowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, _minimumFundingGoal, _maximumSellableTokens) {
 
-    //Setting the rate here
-    setConversionRate(_chfRate);
-  }
-
-  function setConversionRate(uint _chfRate) onlyOwner {
-    MysteriumPricing(pricingStrategy).setConversionRate(_chfRate);
   }
 
   /// @dev triggerSoftCap triggers the earlier closing time
