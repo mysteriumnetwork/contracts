@@ -21,11 +21,12 @@ def mysterium_token(chain, team_multisig, token_name, token_symbol, initial_supp
         "from": team_multisig
     }
 
-    contract, hash = chain.provider.deploy_contract('CrowdsaleToken', deploy_args=args, deploy_transaction=tx)
+    contract, hash = chain.provider.deploy_contract('MysteriumToken', deploy_args=args, deploy_transaction=tx)
     return contract
 
-@pytest.fixture()
-def mysterium_finalize_agent(chain, mysterium_token, crowdsale, mysterium_pricing) -> Contract:
+
+@pytest.fixture
+def mysterium_finalize_agent(team_multisig, chain, mysterium_token, crowdsale, mysterium_pricing) -> Contract:
 
     # Create finalizer contract
     args = [
@@ -33,20 +34,28 @@ def mysterium_finalize_agent(chain, mysterium_token, crowdsale, mysterium_pricin
         crowdsale.address,
         mysterium_pricing.address
     ]
-    contract, hash = chain.provider.deploy_contract('MysteriumTokenDistribution', deploy_args=args)
+
+    tx = {
+        "from": team_multisig
+    }
+
+    contract, hash = chain.provider.deploy_contract('MysteriumTokenDistribution', deploy_args=args, deploy_transaction=tx)
     return contract
+
 
 @pytest.fixture
 def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
     """Flat pricing contact."""
     args = [
         preico_token_price,
-        preico_token_price*2
+        preico_token_price*2,
+        to_wei(1, "ether")
     ]
     tx = {
         "from": team_multisig,
     }
     pricing_strategy, hash = chain.provider.deploy_contract('MysteriumPricing', deploy_args=args,  deploy_transaction=tx)
+    pricing_strategy.transact({"from": team_multisig}).setSoftCap(1000000)
     return pricing_strategy
 
 
@@ -69,7 +78,7 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
     contract, hash = chain.provider.deploy_contract('MysteriumCrowdsale', deploy_args=args, deploy_transaction=tx)
 
     mysterium_pricing.transact({"from": team_multisig}).setCrowdsale(contract.address)
-    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(to_wei(1000, "ether"))
+    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(to_wei(1, "ether"))
 
     assert contract.call().owner() == team_multisig
     assert not token.call().released()
@@ -78,13 +87,17 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
     token.transact({"from": team_multisig}).setMintAgent(contract.address, True)
     assert token.call().mintAgents(contract.address) == True
 
+
     return contract
 
-def test_distribution_700k(chain, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, crowdsale, team_multisig):
+def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, crowdsale, team_multisig):
     # 700K
+    crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address) # Must be done before sending
+    mysterium_token.transact({"from": team_multisig}).setReleaseAgent(mysterium_finalize_agent.address)
     time_travel(chain, preico_starts_at + 1)
     wei_value = preico_funding_goal
-    crowdsale.transact({"from": customer, "value": 1000000}).buy()
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    crowdsale.transact({"from": customer, "value": 1000}).buy()
     assert crowdsale.call().getState() == CrowdsaleState.Success
     assert crowdsale.call().finalizeAgent() == mysterium_finalize_agent.address
     crowdsale.transact({"from": team_multisig}).finalize()

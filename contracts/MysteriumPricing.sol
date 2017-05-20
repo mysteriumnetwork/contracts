@@ -25,9 +25,10 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   //Address of the ICO contract:
   Crowdsale crowdsale;
 
-  function MysteriumPricing(uint _tokenPricePrimary, uint _tokenPriceSecondary) {
+  function MysteriumPricing(uint _tokenPricePrimary, uint _tokenPriceSecondary, uint initialChfRate) {
     tokenPricePrimary = _tokenPricePrimary;
     tokenPriceSecondary = _tokenPriceSecondary;
+    chfRate = initialChfRate;
   }
 
   /// @dev Setting crowdsale for setConversionRate()
@@ -65,7 +66,7 @@ contract MysteriumPricing is PricingStrategy, Ownable {
    */
   function calculatePrice(uint value, uint tokensSold, uint weiRaised, address msgSender, uint decimals) public constant returns (uint) {
     uint multiplier = 10 ** decimals;
-
+    
     if (getSoftCapInWeis() > weiRaised) {
       //Here SoftCap is not active yet
       return value.times(multiplier) / tokenPricePrimary;

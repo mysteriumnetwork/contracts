@@ -1,17 +1,17 @@
 pragma solidity ^0.4.7;
 
-import "./MintedTokenCappedCrowdsale.sol";
+import "./MintedEthCappedCrowdsale.sol";
 import "./MysteriumPricing.sol";
 
-contract MysteriumCrowdsale is MintedTokenCappedCrowdsale {
+contract MysteriumCrowdsale is MintedEthCappedCrowdsale {
   using SafeMathLib for uint;
 
   // Are we on the "end slope" (triggered after soft cap)
   bool softCapTriggered;
 
-  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint _maximumSellableTokens)
-    MintedTokenCappedCrowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, _minimumFundingGoal, _maximumSellableTokens) {
-
+  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint chfCap)
+    MintedEthCappedCrowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, _minimumFundingGoal, chfCap) {
+    weiCap = chfCap * MysteriumPricing(pricingStrategy).chfRate();
   }
 
   /// @dev triggerSoftCap triggers the earlier closing time
