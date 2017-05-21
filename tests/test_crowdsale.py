@@ -56,6 +56,9 @@ def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
     }
     pricing_strategy, hash = chain.provider.deploy_contract('MysteriumPricing', deploy_args=args,  deploy_transaction=tx)
     pricing_strategy.transact({"from": team_multisig}).setSoftCap(1000000)
+
+    # assert pricing_strategy.call().tokenPricePrimary() == 1
+
     return pricing_strategy
 
 
@@ -85,8 +88,8 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
 
     # Allow pre-ico contract to do mint()
     token.transact({"from": team_multisig}).setMintAgent(contract.address, True)
+    token.transact({"from": team_multisig}).setTransferAgent(contract.address, True)
     assert token.call().mintAgents(contract.address) == True
-
 
     return contract
 

@@ -13,11 +13,17 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   using SafeMathLib for uint;
 
   // The conversion rate: how many weis is 1 CHF
+  // https://www.coingecko.com/en/price_charts/ethereum/chf
+  // 120.34587901 is 1203458
   uint public chfRate;
 
+  // We use 4 decimals for CHF
+  uint public constant cfhConversionBase = 10000;
+
   /* How many weis one token costs */
-  uint public tokenPricePrimary;
-  uint public tokenPriceSecondary;
+  uint public tokenPricePrimary = 12000;  // Expressed as CFH base points
+
+  uint public tokenPriceSecondary = 10000;  // Expressed as CFH base points
 
   // Soft cap implementation in CHF
   uint public softCap;
@@ -25,9 +31,7 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   //Address of the ICO contract:
   Crowdsale crowdsale;
 
-  function MysteriumPricing(uint _tokenPricePrimary, uint _tokenPriceSecondary, uint initialChfRate) {
-    tokenPricePrimary = _tokenPricePrimary;
-    tokenPriceSecondary = _tokenPriceSecondary;
+  function MysteriumPricing(uint initialChfRate) {
     chfRate = initialChfRate;
   }
 
@@ -47,16 +51,13 @@ contract MysteriumPricing is PricingStrategy, Ownable {
     chfRate = _chfRate;
   }
 
+  function convertToWei(uint chf) public constant returns(uint) {
+    return chf.times(chfRate).times(10**18) / cfhConversionBase;
+  }
 
   /// @dev Function which tranforms CHF softcap to weis
   function getSoftCapInWeis() returns (uint) {
-    return chfRate * softCap;
-  }
-
-  /// @dev Here you can set the softcap in CHF
-  /// @param _softCap soft cap in CHF
-  function setSoftCap(uint _softCap) onlyOwner {
-    softCap = _softCap;
+    return convertToWei(6000000);
   }
 
   /**
@@ -64,14 +65,15 @@ contract MysteriumPricing is PricingStrategy, Ownable {
    *
    * @param  {uint amount} Buy-in value in wei.
    */
-  function calculatePrice(uint value, uint tokensSold, uint weiRaised, address msgSender, uint decimals) public constant returns (uint) {
+  function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
+
     uint multiplier = 10 ** decimals;
-    
+
     if (getSoftCapInWeis() > weiRaised) {
       //Here SoftCap is not active yet
-      return value.times(multiplier) / tokenPricePrimary;
+      return value.times(multiplier) / convertToWei(tokenPricePrimary);
     } else {
-      return value.times(multiplier) / tokenPriceSecondary;
+      return value.times(multiplier) / convertToWei(tokenPriceSecondary);
     }
   }
 
