@@ -55,7 +55,7 @@ contract MultiVault is SafeMath {
     uint tokenBalance = getTokenBalance();
 
     // StandardToken will throw in the case of transaction fails
-    for (uint i=0; i <= (addresses.length-1); i++)
+    for (uint i=0; i < addresses.length; i++)
       token.transfer(addresses[i], tokenBalance/(scale/percents[i]));
 
     Unlocked();
