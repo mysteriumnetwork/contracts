@@ -55,7 +55,6 @@ def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
         "from": team_multisig,
     }
     pricing_strategy, hash = chain.provider.deploy_contract('MysteriumPricing', deploy_args=args,  deploy_transaction=tx)
-    pricing_strategy.transact({"from": team_multisig}).setSoftCap(1000000)
 
     # assert pricing_strategy.call().tokenPricePrimary() == 1
 

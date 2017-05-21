@@ -17,8 +17,7 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   // 120.34587901 is 1203458
   uint public chfRate;
 
-  // We use 4 decimals for CHF
-  uint public constant cfhConversionBase = 10000;
+  uint public chfScale = 10000;
 
   /* How many weis one token costs */
   uint public tokenPricePrimary = 12000;  // Expressed as CFH base points
@@ -51,13 +50,19 @@ contract MysteriumPricing is PricingStrategy, Ownable {
     chfRate = _chfRate;
   }
 
+  /**
+   * Currency conversion
+   *
+   * @param  chf CHF price * 100000
+   * @return wei price
+   */
   function convertToWei(uint chf) public constant returns(uint) {
-    return chf.times(chfRate).times(10**18) / cfhConversionBase;
+    return chf.times(10**18) / chfRate;
   }
 
   /// @dev Function which tranforms CHF softcap to weis
-  function getSoftCapInWeis() returns (uint) {
-    return convertToWei(6000000);
+  function getSoftCapInWeis() public returns (uint) {
+    return convertToWei(6000000 * 10000);
   }
 
   /**
