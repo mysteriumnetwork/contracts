@@ -133,7 +133,7 @@ contract MultiVault is Ownable {
    * How many tokens remain unclaimed for an investor.
    */
   function getClaimLeft(address investor) public constant returns (uint) {
-    getClaimAmount(investor).minus(claimed[investor]);
+    return getClaimAmount(investor).minus(claimed[investor]);
   }
 
   /**
@@ -179,12 +179,10 @@ contract MultiVault is Ownable {
    * Resolve the contract umambigious state.
    */
   function getState() public returns(State) {
-    if(getToken().balanceOf(address(this)) == 0) {
-      return State.Unknown;
-    } else if(now < freezeEndsAt) {
-      return State.Holding;
-    } else {
+    if(now > freezeEndsAt) {
       return State.Distributing;
+    } else {
+      return State.Holding;
     }
   }
 
