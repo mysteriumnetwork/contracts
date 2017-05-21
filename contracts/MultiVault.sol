@@ -49,8 +49,11 @@ contract MultiVault is Ownable {
   /** Our ICO contract where we will move the funds */
   Crowdsale public crowdsale;
 
+  /** We can also define our own token, which will override the ICO one ***/
+  FractionalERC20 public token;
+
   /** What is our current state. */
-  enum State{Unknown, Funding, Distributing, Refunding}
+  enum State{Unknown, Holding, Distributing}
 
   /** Somebody loaded their investment money */
   event Invested(address investor, uint value);
@@ -67,7 +70,7 @@ contract MultiVault is Ownable {
   /**
    * Create presale contract where lock up period is given days
    */
-  function MultiVault(address _owner, uint _freezeEndsAt, uint _weiMinimumLimit) {
+  function MultiVault(address _owner, uint _freezeEndsAt) {
 
     owner = _owner;
 
@@ -76,12 +79,6 @@ contract MultiVault is Ownable {
       throw;
     }
 
-    // Give argument
-    if(_weiMinimumLimit == 0) {
-      throw;
-    }
-
-    weiMinimumLimit = _weiMinimumLimit;
     freezeEndsAt = _freezeEndsAt;
   }
 
@@ -89,6 +86,9 @@ contract MultiVault is Ownable {
    * Get the token we are distributing.
    */
   function getToken() public constant returns(FractionalERC20) {
+    if (address(token) > 0)
+      return token;
+
     if(address(crowdsale) == 0)  {
       throw;
     }
@@ -99,19 +99,14 @@ contract MultiVault is Ownable {
   /**
    * Participate to a presale.
    */
-  function addInvestor(address investor, uint amount) onlyOwner public payable {
+  function addInvestor(address investor, uint amount) public onlyOwner payable {
 
     // Cannot invest anymore through crowdsale when moving has begun
-    if(getState() != State.Funding) throw;
+    if(getState() == State.Distributing) throw;
 
     bool existing = balances[investor] > 0;
 
     balances[investor] = balances[investor].plus(amount);
-
-    // Need to fulfill minimum limit
-    if(balances[investor] < weiMinimumLimit) {
-      throw;
-    }
 
     // This is a new investor
     if(!existing) {
@@ -125,29 +120,13 @@ contract MultiVault is Ownable {
   }
 
   /**
-   * Load funds to the crowdsale for all investors.
-   *
-   *
-   */
-  function buyForEverybody() public {
-    tokensBought = getToken().balanceOf(address(this));
-
-    if(tokensBought == 0) {
-      // Did not get any tokens
-      throw;
-    }
-
-    TokensBoughts(tokensBought);
-  }
-
-  /**
    * How may tokens each investor gets.
    */
   function getClaimAmount(address investor) public constant returns (uint) {
     if(getState() != State.Distributing) {
       throw;
     }
-    return balances[investor].times(tokensBought) / weiRaisedTotal;
+    return balances[investor].times(getToken().balanceOf(address(this))) / weiRaisedTotal;
   }
 
   /**
@@ -183,41 +162,27 @@ contract MultiVault is Ownable {
   }
 
   /**
-   * ICO never happened. Allow refund.
-   */
-  function refund() {
-
-    // Trying to ask refund too soon
-    if(getState() != State.Refunding) throw;
-
-    address investor = msg.sender;
-    if(balances[investor] == 0) throw;
-    uint amount = balances[investor];
-    delete balances[investor];
-    if(!investor.send(amount)) throw;
-    Refunded(investor, amount);
-  }
-
-  /**
    * Set the target crowdsale where we will move presale funds when the crowdsale opens.
    */
   function setCrowdsale(Crowdsale _crowdsale) public onlyOwner {
     crowdsale = _crowdsale;
+  }
 
-    // Chck interface
-    if(!crowdsale.isCrowdsale()) true;
+  /**
+   * Set the target token, which overrides the ICO token.
+   */
+  function setToken(FractionalERC20 _token) public onlyOwner {
+    token = _token;
   }
 
   /**
    * Resolve the contract umambigious state.
    */
   function getState() public returns(State) {
-    if(tokensBought == 0) {
-      if(now >= freezeEndsAt) {
-         return State.Refunding;
-      } else {
-        return State.Funding;
-      }
+    if(getToken().balanceOf(address(this)) == 0) {
+      return State.Unknown;
+    } else if(now < freezeEndsAt) {
+      return State.Holding;
     } else {
       return State.Distributing;
     }
