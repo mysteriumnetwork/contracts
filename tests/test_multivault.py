@@ -73,5 +73,6 @@ def test_token_interface(chain, mysterium_multivault, preico_starts_at, mysteriu
     #assert mysterium_multivault.call().getState() == CrowdsaleState.Unknown
     mysterium_multivault.transact({"from": customer}).claimAll();
     assert mysterium_mv_token.call().balanceOf(customer) == 50
-    mysterium_multivault.transact({"from": customer_2}).claim(1);
-    assert mysterium_mv_token.call().balanceOf(customer_2) == 1
+    mysterium_multivault.transact({"from": customer_2}).claim(30);
+    mysterium_multivault.transact({"from": customer_2}).claim(20);
+    assert mysterium_mv_token.call().balanceOf(customer_2) == 50

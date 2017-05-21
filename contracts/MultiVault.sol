@@ -52,6 +52,9 @@ contract MultiVault is Ownable {
   /** We can also define our own token, which will override the ICO one ***/
   FractionalERC20 public token;
 
+  uint initialTokenBalance;
+  bool initialTokenBalanceFetched;
+
   /** What is our current state. */
   enum State{Unknown, Holding, Distributing}
 
@@ -126,7 +129,14 @@ contract MultiVault is Ownable {
     if(getState() != State.Distributing) {
       throw;
     }
-    return balances[investor].times(getToken().balanceOf(address(this))) / weiRaisedTotal;
+
+    // Caching fetched token amount:
+    if (!initialTokenBalanceFetched) {
+        initialTokenBalance = getToken().balanceOf(address(this));
+        initialTokenBalanceFetched = true;
+    }
+
+    return initialTokenBalance/(weiRaisedTotal/balances[investor]);
   }
 
   /**
