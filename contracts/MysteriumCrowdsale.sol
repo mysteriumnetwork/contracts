@@ -3,15 +3,14 @@ pragma solidity ^0.4.7;
 import "./MintedEthCappedCrowdsale.sol";
 import "./MysteriumPricing.sol";
 
-contract MysteriumCrowdsale is MintedEthCappedCrowdsale {
+contract MysteriumCrowdsale is Crowdsale {
   using SafeMathLib for uint;
 
   // Are we on the "end slope" (triggered after soft cap)
   bool softCapTriggered;
 
-  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end, uint _minimumFundingGoal, uint chfCap)
-    MintedEthCappedCrowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, _minimumFundingGoal, chfCap) {
-    weiCap = chfCap * MysteriumPricing(pricingStrategy).chfRate();
+  function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end)
+    Crowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, 0) {
   }
 
   /// @dev triggerSoftCap triggers the earlier closing time
@@ -30,4 +29,38 @@ contract MysteriumCrowdsale is MintedEthCappedCrowdsale {
 
     softCapTriggered = true;
   }
+
+  /**
+   * Get minimum funding goal in wei.
+   */
+  function getMinimumFundingGoal() public constant returns (uint goalInWei) {
+    return MysteriumPricing(pricingStrategy).convertToWei(700000);
+  }
+
+  /**
+   * @return true if the crowdsale has raised enough money to be a succes
+   */
+  function isMinimumGoalReached() public constant returns (bool reached) {
+    return weiRaised >= getMinimumFundingGoal();
+  }
+
+  /**
+   * Called from invest() to confirm if the curret investment does not break our cap rule.
+   */
+  function isBreakingCap(uint weiAmount, uint tokenAmount, uint weiRaisedTotal, uint tokensSoldTotal) constant returns (bool limitBroken) {
+    return weiRaisedTotal > MysteriumPricing(pricingStrategy).convertToWei(10000000);
+  }
+
+  function isCrowdsaleFull() public constant returns (bool) {
+    return weiRaised >= MysteriumPricing(pricingStrategy).convertToWei(10000000);
+  }
+
+  /**
+   * Dynamically create tokens and assign them to the investor.
+   */
+  function assignTokens(address receiver, uint tokenAmount) private {
+    MintableToken mintableToken = MintableToken(token);
+    mintableToken.mint(receiver, tokenAmount);
+  }
+
 }
