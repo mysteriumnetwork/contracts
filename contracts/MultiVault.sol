@@ -34,17 +34,8 @@ contract MultiVault is Ownable {
   /** How many tokens investors have claimed */
   mapping(address => uint) public claimed;
 
-  /** When our refund freeze is over (UNIT timestamp) */
+  /** When our claim freeze is over (UNIT timestamp) */
   uint public freezeEndsAt;
-
-  /** What is the minimum buy in */
-  uint public weiMinimumLimit;
-
-  /** How many tokens were bought */
-  uint public tokensBought;
-
-   /** How many investors have claimed their tokens */
-  uint public claimCount;
 
   /** Our ICO contract where we will move the funds */
   Crowdsale public crowdsale;
@@ -52,20 +43,17 @@ contract MultiVault is Ownable {
   /** We can also define our own token, which will override the ICO one ***/
   FractionalERC20 public token;
 
-  uint initialTokenBalance;
-  bool initialTokenBalanceFetched;
+  /** How many tokens were deposited on the vautl */
+  uint public initialTokenBalance;
+
+  /* Has owner set the initial balance */
+  bool public initialTokenBalanceFetched;
 
   /** What is our current state. */
   enum State{Unknown, Holding, Distributing}
 
   /** Somebody loaded their investment money */
   event Invested(address investor, uint value);
-
-  /** Refund claimed */
-  event Refunded(address investor, uint value);
-
-  /** We executed our buy */
-  event TokensBoughts(uint count);
 
   /** We distributed tokens to an investor */
   event Distributed(address investors, uint count);
@@ -107,6 +95,8 @@ contract MultiVault is Ownable {
     // Cannot invest anymore through crowdsale when moving has begun
     if(getState() == State.Distributing) throw;
 
+    if(amount == 0) throw; // No empty buys
+
     bool existing = balances[investor] > 0;
 
     balances[investor] = balances[investor].plus(amount);
@@ -126,17 +116,12 @@ contract MultiVault is Ownable {
    * How may tokens each investor gets.
    */
   function getClaimAmount(address investor) public constant returns (uint) {
-    if(getState() != State.Distributing) {
+
+    if(!initialTokenBalanceFetched) {
       throw;
     }
 
-    // Caching fetched token amount:
-    if (!initialTokenBalanceFetched) {
-        initialTokenBalance = getToken().balanceOf(address(this));
-        initialTokenBalanceFetched = true;
-    }
-
-    return initialTokenBalance/(weiRaisedTotal/balances[investor]);
+    return initialTokenBalance.times(balances[investor]) / weiRaisedTotal;
   }
 
   /**
@@ -154,11 +139,39 @@ contract MultiVault is Ownable {
   }
 
   /**
+   * Only owner is allowed to set the vault initial token balance.
+   *
+   * Because only owner can guarantee that the all tokens have been moved
+   * to the vault and it can begin disribution. Otherwise somecone can
+   * call this too early and lock the balance to zero or some other bad value.
+   */
+  function fetchTokenBalance() onlyOwner {
+    // Caching fetched token amount:
+    if (!initialTokenBalanceFetched) {
+        initialTokenBalance = getToken().balanceOf(address(this));
+        if(initialTokenBalance == 0) throw; // Somehow in invalid state
+        initialTokenBalanceFetched = true;
+    } else {
+      throw;
+    }
+  }
+
+  /**
    * Claim N bought tokens to the investor as the msg sender.
    *
    */
   function claim(uint amount) {
     address investor = msg.sender;
+
+    if(!initialTokenBalanceFetched) {
+      // We need to have the balance before we start
+      throw;
+    }
+
+    if(getState() != State.Distributing) {
+      // We are not distributing yet
+      throw;
+    }
 
     if(getClaimLeft(investor) < amount) {
       // Woops we cannot get more than we have left
