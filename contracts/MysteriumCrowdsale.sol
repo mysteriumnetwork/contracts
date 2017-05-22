@@ -28,6 +28,7 @@ contract MysteriumCrowdsale is Crowdsale {
     // When contracts are updated from upstream, you should use:
     // setEndsAt (now + 24 hours);
     endsAt = now + 24 hours;
+    EndsAtChanged(endsAt);
 
     softCapTriggered = true;
   }

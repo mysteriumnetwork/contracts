@@ -152,6 +152,15 @@ def test_set_rate(crowdsale, mysterium_pricing, team_multisig):
     mysterium_pricing.transact({"from": team_multisig}).setConversionRate(130 * 10000)
     assert mysterium_pricing.call().chfRate() == 130 * 10000
 
+
+def test_set_rate_late(chain, crowdsale, mysterium_pricing, team_multisig):
+    """"CHF rate cannot be set after the crowdsale starts.."""
+
+    time_travel(chain, crowdsale.call().startsAt()+1)
+    with pytest.raises(TransactionFailed):
+        mysterium_pricing.transact({"from": team_multisig}).setConversionRate(130 * 10000)
+
+
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 700k
 
