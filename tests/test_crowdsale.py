@@ -145,6 +145,13 @@ def test_hard_cap_price(crowdsale, mysterium_pricing):
     assert tokens_bought == 1 * 10**8
 
 
+def test_set_rate(crowdsale, mysterium_pricing, team_multisig):
+    """"Set CHF rate before crowdsale begins."""
+
+    assert mysterium_pricing.call().chfRate() == 120 * 10000
+    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(130 * 10000)
+    assert mysterium_pricing.call().chfRate() == 130 * 10000
+
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 700k
 
