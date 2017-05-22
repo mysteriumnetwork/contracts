@@ -177,12 +177,13 @@ def test_multi_vault_claim_early(chain, mysterium_multivault, preico_starts_at, 
     # Set the distribution balance
     mysterium_multivault.transact({"from": team_multisig}).fetchTokenBalance()
 
-    # We pass the vault expiration date
+    # We do not pass the vault expiration date
     time_travel(chain, mysterium_multivault.call().freezeEndsAt() - 1)
     assert mysterium_multivault.call().getState() == MultiVaultState.Holding
 
     # We can see the balance even before the transfer kicks in
     assert mysterium_multivault.call().getClaimAmount(customer) == 60
 
+    # Early claim request fails
     with pytest.raises(TransactionFailed):
         mysterium_multivault.transact({"from": customer}).claim(1)
