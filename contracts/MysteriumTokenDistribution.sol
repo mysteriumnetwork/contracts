@@ -156,9 +156,6 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     token.mint(seedVault1, seed_coins_vault1);
     token.mint(seedVault2, seed_coins_vault2);
 
-    // Make token transferable
-    token.releaseTokenTransfer();
-
     // Then divide with multiplier
     //earlybird_coins = earlybird_coins / multiplier;
     //regular_coins = regular_coins / multiplier;

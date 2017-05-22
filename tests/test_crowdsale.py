@@ -108,7 +108,7 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
 def ready_crowdsale(crowdsale, mysterium_token, mysterium_finalize_agent, team_multisig):
     """Crowdsale waiting the time to start."""
     crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address)  # Must be done before sending
-    mysterium_token.transact({"from": team_multisig}).setReleaseAgent(mysterium_finalize_agent.address)
+    mysterium_token.transact({"from": team_multisig}).setReleaseAgent(team_multisig)
     mysterium_token.transact({"from": team_multisig}).setTransferAgent(mysterium_finalize_agent.address, True)
     return crowdsale
 
@@ -269,6 +269,15 @@ def test_hard_cao_reached(started_crowdsale, team_multisig, customer, mysterium_
 
     with pytest.raises(TransactionFailed):
         crowdsale.transact({"from": customer, "value": to_wei(1, "ether")}).buy()
+
+
+def test_manual_release(started_crowdsale, mysterium_token, team_multisig):
+    """Mysterium token transfers can be manually released by team multisig."""
+
+    assert not mysterium_token.call().released()
+    mysterium_token.transact({"from": team_multisig}).releaseTokenTransfer()
+    assert mysterium_token.call().released()
+
 
 
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
