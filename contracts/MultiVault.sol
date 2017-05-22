@@ -22,7 +22,7 @@ contract MultiVault is Ownable {
   /** How many investors we have now */
   uint public investorCount;
 
-  /** How many wei we have raised totla. */
+  /** How many wei we have raised total. We use this as the distribution total amount. However because investors are added by hand this can be direct percentages too. */
   uint public weiRaisedTotal;
 
   /** Who are our investors (iterable) */
@@ -90,10 +90,10 @@ contract MultiVault is Ownable {
   /**
    * Participate to a presale.
    */
-  function addInvestor(address investor, uint amount) public onlyOwner payable {
+  function addInvestor(address investor, uint amount) public onlyOwner {
 
     // Cannot invest anymore through crowdsale when moving has begun
-    if(getState() == State.Distributing) throw;
+    if(getState() != State.Holding) throw;
 
     if(amount == 0) throw; // No empty buys
 
