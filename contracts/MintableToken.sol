@@ -27,6 +27,11 @@ contract MintableToken is StandardToken, Ownable {
    * Only callably by a crowdsale contract (mint agent).
    */
   function mint(address receiver, uint amount) onlyMintAgent canMint public {
+
+    if(amount == 0) {
+      throw;
+    }
+
     totalSupply = totalSupply.plus(amount);
     balances[receiver] = balances[receiver].plus(amount);
     Transfer(0, receiver, amount);

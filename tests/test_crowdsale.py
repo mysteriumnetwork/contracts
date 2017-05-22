@@ -14,7 +14,6 @@ from ico.state import CrowdsaleState
 from ico.utils import decimalize_token_amount
 
 
-
 def in_chf(wei):
     """Convert amount to CHF using our test 120 rate."""
     return int(from_wei(wei, "ether") * 120)
@@ -110,6 +109,7 @@ def ready_crowdsale(crowdsale, mysterium_token, mysterium_finalize_agent, team_m
     crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address)  # Must be done before sending
     mysterium_token.transact({"from": team_multisig}).setReleaseAgent(team_multisig)
     mysterium_token.transact({"from": team_multisig}).setTransferAgent(mysterium_finalize_agent.address, True)
+    mysterium_token.transact({"from": team_multisig}).setMintAgent(mysterium_finalize_agent.address, True)
     return crowdsale
 
 
@@ -288,6 +288,7 @@ def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_s
     assert crowdsale.call().getState() == CrowdsaleState.Funding
     minimum = crowdsale.call().getMinimumFundingGoal()
 
+    assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
     mysterium_finalize_agent.transact().distribute(700000, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
@@ -299,15 +300,17 @@ def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_s
     team_coins = mysterium_finalize_agent.call().team_coins()
     total_coins = mysterium_finalize_agent.call().total_coins()
 
-    assert earlybird_coins == 840000
+    decimal_scale = 10**8  # 8 decimal points
+
+    assert earlybird_coins == 840000 * decimal_scale
     assert regular_coins == 0
-    assert seed_coins == 528000
-    assert future_round_coins == 2206451
-    assert foundation_coins == 397161
-    assert team_coins == 441290
-    assert total_coins == 4412903
+    assert seed_coins == 528000 * decimal_scale
+    assert future_round_coins == 2206451 * decimal_scale
+    assert foundation_coins == 397161 * decimal_scale
+    assert team_coins == 441290 * decimal_scale
+    assert total_coins == 4412903 * decimal_scale
     assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
-    assert crowdsale.call().seed_coins_vault1() == 528000
+    assert crowdsale.call().seed_coins_vault1() == 528000 * decimal_scale
     assert crowdsale.call().seed_coins_vault2() == 0
 
 

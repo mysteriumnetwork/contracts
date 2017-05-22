@@ -147,14 +147,37 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // restore
     // Send to all the wallets (before dividing with multiplier?)
 
-    token.mint(earlybirdVault, earlybird_coins);
-    token.mint(regularVault, regular_coins);
-    token.mint(seedVault, seed_coins);
-    token.mint(futureRoundVault, future_round_coins);
-    token.mint(foundationVault, foundation_coins);
-    token.mint(teamVault, team_coins);
-    token.mint(seedVault1, seed_coins_vault1);
-    token.mint(seedVault2, seed_coins_vault2);
+    if(earlybird_coins > 0) {
+      token.mint(earlybirdVault, earlybird_coins);
+    }
+
+    if(regular_coins > 0) {
+      token.mint(regularVault, regular_coins);
+    }
+
+    if(seed_coins > 0) {
+      token.mint(seedVault, seed_coins);
+    }
+
+    if(future_round_coins > 0) {
+      token.mint(futureRoundVault, future_round_coins);
+    }
+
+    if(foundation_coins > 0) {
+      token.mint(foundationVault, foundation_coins);
+    }
+
+    if(team_coins > 0) {
+      token.mint(teamVault, team_coins);
+    }
+
+    if(seed_coins_vault1 > 0) {
+      token.mint(seedVault1, seed_coins_vault1);
+    }
+
+    if(seed_coins_vault2 > 0) {
+      token.mint(seedVault2, seed_coins_vault2);
+    }
 
     // Then divide with multiplier
     //earlybird_coins = earlybird_coins / multiplier;
