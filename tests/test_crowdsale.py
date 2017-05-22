@@ -196,6 +196,22 @@ def test_bitcoin_suisse(chain, ready_crowdsale, bitcoin_suisse, mysterium_pricin
     crowdsale.transact({"from": bitcoin_suisse, "value": to_wei(10000, "ether")}).buy()
 
 
+def test_set_minimum_funding_goal(crowdsale, team_multisig):
+    """Reset minimum funding goal"""
+
+    # Original goal
+    # We lose ~1 ETH precision in the conversions
+    assert abs(in_chf(crowdsale.call().getMinimumFundingGoal()) - 700000) < 10
+
+    # reset it
+    crowdsale.transact({"from": team_multisig}).setMinimumFundingLimit(8123123 * 10000)
+
+    # New goal
+    # We lose ~1 ETH precision in the conversions
+    new_goal_chf = in_chf(crowdsale.call().getMinimumFundingGoal())
+    assert abs(new_goal_chf - 8123123) < 10
+
+
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 700k
 

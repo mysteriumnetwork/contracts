@@ -11,6 +11,9 @@ contract MysteriumCrowdsale is Crowdsale {
   // Are we on the "end slope" (triggered after soft cap)
   bool softCapTriggered;
 
+  // The default minimum funding limit 7,000,000 CHF
+  uint public minimumFundingCHF = 700000 * 10000;
+
   function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end)
     Crowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, 0) {
   }
@@ -37,7 +40,14 @@ contract MysteriumCrowdsale is Crowdsale {
    * Get minimum funding goal in wei.
    */
   function getMinimumFundingGoal() public constant returns (uint goalInWei) {
-    return MysteriumPricing(pricingStrategy).convertToWei(700000 * 10000);
+    return MysteriumPricing(pricingStrategy).convertToWei(minimumFundingCHF);
+  }
+
+  /**
+   * Allow reset the threshold.
+   */
+  function setMinimumFundingLimit(uint chf) onlyOwner {
+    minimumFundingCHF = chf;
   }
 
   /**
