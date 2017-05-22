@@ -1,7 +1,9 @@
 pragma solidity ^0.4.7;
 
-import "./MintedEthCappedCrowdsale.sol";
+import "./Crowdsale.sol";
 import "./MysteriumPricing.sol";
+import "./MintableToken.sol";
+
 
 contract MysteriumCrowdsale is Crowdsale {
   using SafeMathLib for uint;
