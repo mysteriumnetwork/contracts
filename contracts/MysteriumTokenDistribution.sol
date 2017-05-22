@@ -43,7 +43,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   //uint public EARLYBIRD_PRICE_MULTIPLIER = 1.2;
   uint REGULAR_PRICE_MULTIPLIER = 1;
   uint multiplier = 10 ** 8;
-  // Temporary variables for distribute():
+
+  // Expose the state of distribute for the examination
   uint public earlybird_coins;
   uint public regular_coins;
   uint public seed_coins;
@@ -53,6 +54,10 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   uint public team_coins;
   uint public seed_coins_vault1;
   uint public seed_coins_vault2;
+  uint public seed_multiplier;
+  uint public future_round_percentage;
+  uint public percentage_of_three;
+  uint public earlybird_percentage;
 
   function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing) {
     token = _token;
@@ -69,13 +74,6 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // seed coins
     // foundation coins
     // team coins
-
-
-
-    uint seed_multiplier;
-    uint future_round_percentage;
-    uint percentage_of_three;
-    uint earlybird_percentage;
 
 
     // step 1
@@ -107,6 +105,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // step 4
     seed_coins = SEED_RAISED_ETH * eth_chf_price * seed_multiplier;
 
+
     // step 5
     // 2M - 50%
     // 6M - 15%
@@ -127,6 +126,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // step 8
     total_coins = earlybird_coins * 100 * multiplier / earlybird_percentage;
 
+
     // step 9
     future_round_coins = future_round_percentage * total_coins / 100 / multiplier;
 
@@ -146,6 +146,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
 
     // restore
     // Send to all the wallets (before dividing with multiplier?)
+
     token.mint(earlybirdVault, earlybird_coins);
     token.mint(regularVault, regular_coins);
     token.mint(seedVault, seed_coins);
@@ -192,23 +193,21 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
 
   /* Can we run finalize properly */
   function isSane() public constant returns (bool) {
+    // TODO: Check all vaults implement the correct vault interface
     return true;
-    //return (token.mintAgents(address(this)) == true) && (token.releaseAgent() == address(this) == true);
   }
 
   /** Called once by crowdsale finalize() if the sale was success. */
   function finalizeCrowdsale() {
-    if(msg.sender != address(crowdsale)) {
-      throw;
+    if(msg.sender == address(crowdsale) || msg.sender == owner) {
+      // The owner can distribute tokens for testing and in emergency
+      // Crowdsale distributes tokens at the end of the crowdsale
+      uint chfRate = mysteriumPricing.getEthChfPrice();
+      distribute(crowdsale.weiRaised()/chfRate, chfRate);
+    } else {
+       throw;
     }
 
-    uint chfRate = mysteriumPricing.chfRate();
-    distribute(crowdsale.weiRaised()/chfRate, chfRate);
-
-    // NOTE:
-    // How many % of tokens the founders and others get, is this obsolete? distribute() should handle this?
-    //uint tokensSold = crowdsale.tokensSold();
-    //allocatedBonus = tokensSold.times(bonusBasePoints) / 10000;
   }
 
 }

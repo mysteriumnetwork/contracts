@@ -20,12 +20,9 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   uint public chfScale = 10000;
 
   /* How many weis one token costs */
-  uint public tokenPricePrimary = 12000;  // Expressed as CFH base points
+  uint public hardCapPrice = 12000;  // 1.2 * 10000 Expressed as CFH base points
 
-  uint public tokenPriceSecondary = 10000;  // Expressed as CFH base points
-
-  // Soft cap implementation in CHF
-  uint public softCap;
+  uint public softCapPrice = 10000;  // 1.0 * 10000 Expressed as CFH base points
 
   //Address of the ICO contract:
   Crowdsale crowdsale;
@@ -51,6 +48,15 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   }
 
   /**
+   * Get CHF/ETH pair as an integer.
+   *
+   * Used in distribution calculations.
+   */
+  function getEthChfPrice() public constant returns (uint) {
+    return chfRate / chfScale;
+  }
+
+  /**
    * Currency conversion
    *
    * @param  chf CHF price * 100000
@@ -68,17 +74,17 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   /**
    * Calculate the current price for buy in amount.
    *
-   * @param  {uint amount} Buy-in value in wei.
+   * @param  {uint amount} How many tokens we get
    */
   function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
 
     uint multiplier = 10 ** decimals;
 
-    if (getSoftCapInWeis() > weiRaised) {
+    if (weiRaised > getSoftCapInWeis()) {
       //Here SoftCap is not active yet
-      return value.times(multiplier) / convertToWei(tokenPricePrimary);
+      return value.times(multiplier) / convertToWei(hardCapPrice);
     } else {
-      return value.times(multiplier) / convertToWei(tokenPriceSecondary);
+      return value.times(multiplier) / convertToWei(softCapPrice);
     }
   }
 

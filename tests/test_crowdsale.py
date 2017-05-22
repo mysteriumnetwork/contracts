@@ -2,6 +2,8 @@ import datetime
 
 import pytest
 from decimal import Decimal
+
+from eth_utils import from_wei
 from eth_utils import to_wei
 from ethereum.tester import TransactionFailed
 from web3.contract import Contract
@@ -10,6 +12,14 @@ from web3.contract import Contract
 from ico.tests.utils import time_travel
 from ico.state import CrowdsaleState
 from ico.utils import decimalize_token_amount
+
+
+
+def in_chf(wei):
+    """Convert amount to CHF using our test 120 rate."""
+    return int(from_wei(wei, "ether") * 120)
+
+
 
 @pytest.fixture
 def mysterium_token(chain, team_multisig, token_name, token_symbol, initial_supply) -> Contract:
@@ -40,6 +50,7 @@ def mysterium_finalize_agent(team_multisig, chain, mysterium_token, crowdsale, m
     }
 
     contract, hash = chain.provider.deploy_contract('MysteriumTokenDistribution', deploy_args=args, deploy_transaction=tx)
+
     return contract
 
 
@@ -47,18 +58,14 @@ def mysterium_finalize_agent(team_multisig, chain, mysterium_token, crowdsale, m
 def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
     """Flat pricing contact."""
     args = [
-        preico_token_price,
-        preico_token_price*2,
-        to_wei(1, "ether")
+        120000  # 120 CHF = 1 ETH at the scale of 10000
     ]
     tx = {
         "from": team_multisig,
     }
     pricing_strategy, hash = chain.provider.deploy_contract('MysteriumPricing', deploy_args=args,  deploy_transaction=tx)
-
-    # assert pricing_strategy.call().tokenPricePrimary() == 1
-
     return pricing_strategy
+
 
 
 @pytest.fixture
@@ -71,8 +78,6 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
         team_multisig,
         preico_starts_at,
         preico_ends_at,
-        preico_funding_goal,
-        preico_funding_goal
     ]
     tx = {
         "from": team_multisig,
@@ -80,7 +85,7 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
     contract, hash = chain.provider.deploy_contract('MysteriumCrowdsale', deploy_args=args, deploy_transaction=tx)
 
     mysterium_pricing.transact({"from": team_multisig}).setCrowdsale(contract.address)
-    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(to_wei(1, "ether"))
+    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(120*10000)
 
     assert contract.call().owner() == team_multisig
     assert not token.call().released()
@@ -92,21 +97,65 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
 
     return contract
 
-def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, crowdsale, team_multisig):
-    # 700K
+
+@pytest.fixture()
+def started_crowdsale(chain, crowdsale, mysterium_token, mysterium_finalize_agent, team_multisig):
+    """Crowdsale that has been time traveled to funding state."""
+    # Setup crowdsale to Funding state
+
     crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address) # Must be done before sending
     mysterium_token.transact({"from": team_multisig}).setReleaseAgent(mysterium_finalize_agent.address)
-    time_travel(chain, preico_starts_at + 1)
-    wei_value = preico_funding_goal
+    mysterium_token.transact({"from": team_multisig}).setTransferAgent(mysterium_finalize_agent.address, True)
+    time_travel(chain, crowdsale.call().startsAt() + 1)
     assert crowdsale.call().getState() == CrowdsaleState.Funding
-    crowdsale.transact({"from": customer, "value": 1000}).buy()
-    assert crowdsale.call().getState() == CrowdsaleState.Success
-    assert crowdsale.call().finalizeAgent() == mysterium_finalize_agent.address
-    crowdsale.transact({"from": team_multisig}).finalize()
-    assert crowdsale.call().getState() == CrowdsaleState.Finalized
+    return crowdsale
 
-    #mysterium_finalize_agent.transact().distribute(700000, 88)
 
+def test_caps(crowdsale, mysterium_pricing):
+    """"Soft cap and hard cap match specification."""
+
+    # We lose ~1 ETH precision in the conversions
+    assert abs(in_chf(crowdsale.call().getMinimumFundingGoal()) - 700000) < 10
+
+    soft_cap = mysterium_pricing.call().getSoftCapInWeis()
+    assert abs(in_chf(soft_cap) -  6000000) < 10
+
+
+def test_soft_cap_price(crowdsale, mysterium_pricing):
+    """"Soft cap prices match the specification."""
+
+    one_chf_in_eth = to_wei(1/120, "ether")
+
+    # See we get correct price for one token
+    tokens_bought = mysterium_pricing.call().calculatePrice(one_chf_in_eth, 0, 0, '0x0000000000000000000000000000000000000000', 8)
+
+    assert tokens_bought == 1 * 10**8
+
+
+def test_hard_cap_price(crowdsale, mysterium_pricing):
+    """"Soft cap prices match the specification."""
+
+    one_point_two_chf_in_eth = to_wei(1.2/120, "ether")
+
+    soft_cap_goal = mysterium_pricing.call().getSoftCapInWeis()
+
+    # See we get correct price for one token
+    tokens_bought = mysterium_pricing.call().calculatePrice(one_point_two_chf_in_eth, soft_cap_goal + 1, 0, '0x0000000000000000000000000000000000000000', 8)
+
+    assert tokens_bought == 1 * 10**8
+
+
+def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
+    # 700k
+
+    crowdsale = started_crowdsale
+
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    minimum = crowdsale.call().getMinimumFundingGoal()
+
+    mysterium_finalize_agent.transact().distribute(700000, 88)
+
+    assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
     regular_coins = mysterium_finalize_agent.call().regular_coins()
     seed_coins = mysterium_finalize_agent.call().seed_coins()
@@ -125,6 +174,7 @@ def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_s
     assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 0
+
 
 def test_distribution_1m(crowdsale, team_multisig):
     # 1M
@@ -148,6 +198,7 @@ def test_distribution_1m(crowdsale, team_multisig):
     assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 0
+
 
 def test_distribution_2m(crowdsale, team_multisig):
     # 2M
@@ -173,6 +224,7 @@ def test_distribution_2m(crowdsale, team_multisig):
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 0
 
+
 def test_distribution_5m(crowdsale, team_multisig):
     # 5M
     crowdsale.transact().distribute(5 * 1000000, 88)
@@ -196,6 +248,7 @@ def test_distribution_5m(crowdsale, team_multisig):
 
     assert crowdsale.call().seed_coins_vault1() == 528000
     assert crowdsale.call().seed_coins_vault2() == 1584000
+
 
 def test_distribution_8m(crowdsale, team_multisig):
     # 8M
