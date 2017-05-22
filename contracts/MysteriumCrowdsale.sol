@@ -69,15 +69,19 @@ contract MysteriumCrowdsale is Crowdsale {
     return weiRaised >= getMinimumFundingGoal();
   }
 
+  function getHardCap() public constant returns (uint capInWei) {
+    return MysteriumPricing(pricingStrategy).convertToWei(10000000 * 10000);
+  }
+
   /**
    * Called from invest() to confirm if the curret investment does not break our cap rule.
    */
   function isBreakingCap(uint weiAmount, uint tokenAmount, uint weiRaisedTotal, uint tokensSoldTotal) constant returns (bool limitBroken) {
-    return weiRaisedTotal > MysteriumPricing(pricingStrategy).convertToWei(10000000 * 10000);
+    return weiRaisedTotal > getHardCap();
   }
 
   function isCrowdsaleFull() public constant returns (bool) {
-    return weiRaised >= MysteriumPricing(pricingStrategy).convertToWei(10000000 * 10000);
+    return weiRaised >= getHardCap();
   }
 
   /**

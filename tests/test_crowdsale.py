@@ -247,6 +247,26 @@ def test_trigger_soft_cap(started_crowdsale, team_multisig, customer, mysterium_
     crowdsale.transact({"from": customer, "value": to_wei(1, "ether")}).buy()
 
 
+def test_hard_cao_reached(started_crowdsale, team_multisig, customer, mysterium_pricing):
+    """Crowdsale is full when the hard cap is reached.
+
+    Spec 3.6.
+    """
+
+    crowdsale = started_crowdsale
+
+    hard_cap = crowdsale.call().getHardCap()
+
+    # Some generous person comes and buy all tokens in the world
+    crowdsale.transact({"from": customer, "value": hard_cap}).buy()
+
+    # We reached the cap
+    assert crowdsale.call().isCrowdsaleFull()
+    assert crowdsale.call().getState() == CrowdsaleState.Success
+
+    with pytest.raises(TransactionFailed):
+        crowdsale.transact({"from": customer, "value": to_wei(1, "ether")}).buy()
+
 
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 700k
