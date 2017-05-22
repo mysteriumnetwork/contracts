@@ -215,6 +215,9 @@ contract Crowdsale is Haltable {
 
     // Tell us invest was success
     Invested(receiver, weiAmount, tokenAmount, customerId);
+
+    // Call the invest hooks
+    onInvest();
   }
 
   /**
@@ -450,6 +453,14 @@ contract Crowdsale is Haltable {
   /** Interface marker. */
   function isCrowdsale() public constant returns (bool) {
     return true;
+  }
+
+
+  /**
+   * Allow subcontracts to take extra actions on a successful invet.
+   */
+  function onInvest() internal {
+
   }
 
   //

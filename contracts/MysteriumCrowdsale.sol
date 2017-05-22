@@ -9,7 +9,7 @@ contract MysteriumCrowdsale is Crowdsale {
   using SafeMathLib for uint;
 
   // Are we on the "end slope" (triggered after soft cap)
-  bool softCapTriggered;
+  bool public softCapTriggered;
 
   // The default minimum funding limit 7,000,000 CHF
   uint public minimumFundingCHF = 700000 * 10000;
@@ -19,7 +19,7 @@ contract MysteriumCrowdsale is Crowdsale {
   }
 
   /// @dev triggerSoftCap triggers the earlier closing time
-  function triggerSoftCap() {
+  function triggerSoftCap() private {
     if(softCapTriggered)
       throw;
 
@@ -34,6 +34,18 @@ contract MysteriumCrowdsale is Crowdsale {
     EndsAtChanged(endsAt);
 
     softCapTriggered = true;
+  }
+
+  /**
+   * Hook in to provide the soft cap time bomb.
+   */
+  function onInvest() internal {
+     if(!softCapTriggered) {
+         uint softCap = MysteriumPricing(pricingStrategy).getSoftCapInWeis();
+         if(weiRaised > softCap) {
+           triggerSoftCap();
+         }
+     }
   }
 
   /**

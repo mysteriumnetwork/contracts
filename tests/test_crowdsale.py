@@ -220,23 +220,25 @@ def test_trigger_soft_cap(started_crowdsale, team_multisig, customer, mysterium_
 
     crowdsale = started_crowdsale
 
-    # Cannot trigger soft cap until the soft cap is reached
-    with pytest.raises(TransactionFailed):
-        crowdsale.transact({"from": customer}).triggerSoftCap()
+    old_ends_at = crowdsale.call().endsAt()
 
     # Some generous person comes and buy all tokens in the soft cap
     cap = mysterium_pricing.call().getSoftCapInWeis()
-    crowdsale.transact({"from": customer, "value": cap}).buy()
+    crowdsale.transact({"from": customer, "value": cap+1}).buy()
 
     # We reached the cap
     assert crowdsale.call().isSoftCapReached()
+    assert crowdsale.call().softCapTriggered()
 
-    old_ends_at = crowdsale.call().endsAt()
-    crowdsale.transact({"from": customer}).triggerSoftCap()
     new_ends_at = crowdsale.call().endsAt()
 
     # Now buyers need to hurry
     assert new_ends_at < old_ends_at
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+
+    # We can still buy after the soft cap is triggered
+    assert not crowdsale.call().isCrowdsaleFull()
+    crowdsale.transact({"from": customer, "value": to_wei(1, "ether")}).buy()
 
 
 
