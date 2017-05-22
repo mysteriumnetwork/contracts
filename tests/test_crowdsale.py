@@ -255,6 +255,9 @@ def test_hard_cao_reached(started_crowdsale, team_multisig, customer, mysterium_
 
     crowdsale = started_crowdsale
 
+    # Reset hard cap
+    crowdsale.transact({"from": team_multisig}).setHardCapCHF(10000000 * 10000)
+
     hard_cap = crowdsale.call().getHardCap()
 
     # Some generous person comes and buy all tokens in the world

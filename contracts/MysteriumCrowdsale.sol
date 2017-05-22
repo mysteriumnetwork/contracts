@@ -14,6 +14,8 @@ contract MysteriumCrowdsale is Crowdsale {
   // The default minimum funding limit 7,000,000 CHF
   uint public minimumFundingCHF = 700000 * 10000;
 
+  uint public hardCapCHF = 10000000 * 10000;
+
   function MysteriumCrowdsale(address _token, PricingStrategy _pricingStrategy, address _multisigWallet, uint _start, uint _end)
     Crowdsale(_token, _pricingStrategy, _multisigWallet, _start, _end, 0) {
   }
@@ -70,7 +72,16 @@ contract MysteriumCrowdsale is Crowdsale {
   }
 
   function getHardCap() public constant returns (uint capInWei) {
-    return MysteriumPricing(pricingStrategy).convertToWei(10000000 * 10000);
+    return MysteriumPricing(pricingStrategy).convertToWei(hardCapCHF);
+  }
+
+  /**
+   * Reset hard cap.
+   *
+   * Give price in CHF * 10000
+   */
+  function setHardCapCHF(uint _hardCapCHF) onlyOwner {
+    hardCapCHF = _hardCapCHF;
   }
 
   /**
