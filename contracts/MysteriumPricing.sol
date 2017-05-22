@@ -24,6 +24,8 @@ contract MysteriumPricing is PricingStrategy, Ownable {
 
   uint public softCapPrice = 10000;  // 1.0 * 10000 Expressed as CFH base points
 
+  uint public softCapCHF = 6000000 * 10000; // Soft cap set in CHF
+
   //Address of the ICO contract:
   Crowdsale crowdsale;
 
@@ -48,6 +50,13 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   }
 
   /**
+   * Allow to set soft cap.
+   */
+  function setSoftCapCHF(uint _softCapCHF) onlyOwner {
+    softCapCHF = _softCapCHF;
+  }
+
+  /**
    * Get CHF/ETH pair as an integer.
    *
    * Used in distribution calculations.
@@ -68,7 +77,7 @@ contract MysteriumPricing is PricingStrategy, Ownable {
 
   /// @dev Function which tranforms CHF softcap to weis
   function getSoftCapInWeis() public returns (uint) {
-    return convertToWei(6000000 * 10000);
+    return convertToWei(softCapCHF);
   }
 
   /**

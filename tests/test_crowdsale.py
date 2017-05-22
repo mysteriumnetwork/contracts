@@ -216,9 +216,15 @@ def test_set_minimum_funding_goal(crowdsale, team_multisig):
 
 
 def test_trigger_soft_cap(started_crowdsale, team_multisig, customer, mysterium_pricing):
-    """See that the soft cap trigger causes the end time rewind."""
+    """See that the soft cap trigger causes the end time rewind.
+
+    Spec 3.5.
+    """
 
     crowdsale = started_crowdsale
+
+    # Let's first change the soft cap as the owner
+    mysterium_pricing.transact({"from": team_multisig}).setSoftCapCHF(6000000 * 10000)
 
     old_ends_at = crowdsale.call().endsAt()
 
