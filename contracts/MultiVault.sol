@@ -1,67 +1,203 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.6;
 
-import "zeppelin/contracts/token/StandardToken.sol";
+
+import "./Crowdsale.sol";
+import "./SafeMathLib.sol";
+import "./StandardToken.sol";
 
 /**
+ * Collect funds from presale investors, buy tokens for them in a single transaction and distribute out tokens.
  *
- * Time-locked token vault of allocated tokens for founders.
+ * - Collect funds from pre-sale investors
+ * - Send funds to the crowdsale when it opens
+ * - Allow owner to set the crowdsale
+ * - Have refund after X days as a safety hatch if the crowdsale doesn't materilize
+ * - Allow unlimited investors
  *
- * First used by Lunyr https://github.com/Lunyr/crowdsale-contracts
  */
-contract MultiVault is SafeMath {
+contract MultiVault is Ownable {
 
-  /** Interface flag to determine if address is for a real contract or not */
-  bool public isTimeVault = true;
+  using SafeMathLib for uint;
 
-  /** Token we are holding */
-  StandardToken public token;
+  /** How many investors we have now */
+  uint public investorCount;
 
-  /** Address that can claim tokens */
-  address[] addresses;
-  uint scale; // What is 100%, this defines the scale, like 10000.
-  uint[] percents; // These defines how many percents ((fullAmount/100)*percents)
+  /** How many wei we have raised totla. */
+  uint public weiRaisedTotal;
 
-  /** UNIX timestamp when tokens can be claimed. */
-  uint256 public unlockedAt;
+  /** Who are our investors (iterable) */
+  address[] public investors;
 
-  event Unlocked();
+  /** How much they have invested */
+  mapping(address => uint) public balances;
 
-  /// @dev You specify here who are the owners and which are their percents.
-  ///      You can also specify what is 100% (fullAmount), so this is flexible.
-  function MultiVault(StandardToken _token, uint _unlockedAt, address[] _addresses, uint[] _percents, uint _scale) {
-    if (_addresses.length != _percents.length)
+  /** How many tokens investors have claimed */
+  mapping(address => uint) public claimed;
+
+  /** When our refund freeze is over (UNIT timestamp) */
+  uint public freezeEndsAt;
+
+  /** What is the minimum buy in */
+  uint public weiMinimumLimit;
+
+  /** How many tokens were bought */
+  uint public tokensBought;
+
+   /** How many investors have claimed their tokens */
+  uint public claimCount;
+
+  /** Our ICO contract where we will move the funds */
+  Crowdsale public crowdsale;
+
+  /** We can also define our own token, which will override the ICO one ***/
+  FractionalERC20 public token;
+
+  uint initialTokenBalance;
+  bool initialTokenBalanceFetched;
+
+  /** What is our current state. */
+  enum State{Unknown, Holding, Distributing}
+
+  /** Somebody loaded their investment money */
+  event Invested(address investor, uint value);
+
+  /** Refund claimed */
+  event Refunded(address investor, uint value);
+
+  /** We executed our buy */
+  event TokensBoughts(uint count);
+
+  /** We distributed tokens to an investor */
+  event Distributed(address investors, uint count);
+
+  /**
+   * Create presale contract where lock up period is given days
+   */
+  function MultiVault(address _owner, uint _freezeEndsAt) {
+
+    owner = _owner;
+
+    // Give argument
+    if(_freezeEndsAt == 0) {
       throw;
+    }
 
+    freezeEndsAt = _freezeEndsAt;
+  }
+
+  /**
+   * Get the token we are distributing.
+   */
+  function getToken() public constant returns(FractionalERC20) {
+    if (address(token) > 0)
+      return token;
+
+    if(address(crowdsale) == 0)  {
+      throw;
+    }
+
+    return crowdsale.token();
+  }
+
+  /**
+   * Participate to a presale.
+   */
+  function addInvestor(address investor, uint amount) public onlyOwner payable {
+
+    // Cannot invest anymore through crowdsale when moving has begun
+    if(getState() == State.Distributing) throw;
+
+    bool existing = balances[investor] > 0;
+
+    balances[investor] = balances[investor].plus(amount);
+
+    // This is a new investor
+    if(!existing) {
+      investors.push(investor);
+      investorCount++;
+    }
+
+    weiRaisedTotal = weiRaisedTotal.plus(amount);
+
+    Invested(investor, amount);
+  }
+
+  /**
+   * How may tokens each investor gets.
+   */
+  function getClaimAmount(address investor) public constant returns (uint) {
+    if(getState() != State.Distributing) {
+      throw;
+    }
+
+    // Caching fetched token amount:
+    if (!initialTokenBalanceFetched) {
+        initialTokenBalance = getToken().balanceOf(address(this));
+        initialTokenBalanceFetched = true;
+    }
+
+    return initialTokenBalance/(weiRaisedTotal/balances[investor]);
+  }
+
+  /**
+   * How many tokens remain unclaimed for an investor.
+   */
+  function getClaimLeft(address investor) public constant returns (uint) {
+    return getClaimAmount(investor).minus(claimed[investor]);
+  }
+
+  /**
+   * Claim all remaining tokens for this investor.
+   */
+  function claimAll() {
+    claim(getClaimLeft(msg.sender));
+  }
+
+  /**
+   * Claim N bought tokens to the investor as the msg sender.
+   *
+   */
+  function claim(uint amount) {
+    address investor = msg.sender;
+
+    if(getClaimLeft(investor) < amount) {
+      // Woops we cannot get more than we have left
+      throw;
+    }
+
+    claimed[investor] = claimed[investor].plus(amount);
+    getToken().transfer(investor, amount);
+
+    Distributed(investor, amount);
+  }
+
+  /**
+   * Set the target crowdsale where we will move presale funds when the crowdsale opens.
+   */
+  function setCrowdsale(Crowdsale _crowdsale) public onlyOwner {
+    crowdsale = _crowdsale;
+  }
+
+  /**
+   * Set the target token, which overrides the ICO token.
+   */
+  function setToken(FractionalERC20 _token) public onlyOwner {
     token = _token;
-    unlockedAt = _unlockedAt;
-
-    addresses = _addresses;
-    percents = _percents;
-    scale = _scale;
-
-    // Sanity check
-    if (address(token) == 0x0) throw;
   }
 
-  function getTokenBalance() public constant returns (uint) {
-    return token.balanceOf(address(this));
+  /**
+   * Resolve the contract umambigious state.
+   */
+  function getState() public returns(State) {
+    if(now > freezeEndsAt) {
+      return State.Distributing;
+    } else {
+      return State.Holding;
+    }
   }
 
-  /// @notice Transfer locked tokens to Lunyr's multisig wallet
-  function unlock() public {
-    // Wait your turn!
-    if (now < unlockedAt) throw;
-
-    uint tokenBalance = getTokenBalance();
-
-    // StandardToken will throw in the case of transaction fails
-    for (uint i=0; i <= (addresses.length-1); i++)
-      token.transfer(addresses[i], tokenBalance/(scale/percents[i]));
-
-    Unlocked();
+  /** Explicitly call function from your wallet. */
+  function() payable {
+    throw;
   }
-
-  // disallow ETH payment for this vault
-  function () { throw; }
-
 }

@@ -88,7 +88,6 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
 
     uint multiplier = 10 ** decimals;
-
     if (weiRaised > getSoftCapInWeis()) {
       //Here SoftCap is not active yet
       return value.times(multiplier) / convertToWei(hardCapPrice);
