@@ -300,114 +300,150 @@ def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_s
     team_coins = mysterium_finalize_agent.call().team_coins()
     total_coins = mysterium_finalize_agent.call().total_coins()
 
-    decimal_scale = 10**8  # 8 decimal points
+    decimal_scale = 10**8  # 8 decimal points, this is here for every function for reference
+
+    # You can use this for debugging:
+    #print (" ", earlybird_coins, " ", regular_coins, " ", seed_coins, " ", future_round_coins, " ", foundation_coins, " ", team_coins, " ", total_coins, " ")
 
     assert earlybird_coins == 840000 * decimal_scale
     assert regular_coins == 0
     assert seed_coins == 528000 * decimal_scale
-    assert future_round_coins == 2206451 * decimal_scale
-    assert foundation_coins == 397161 * decimal_scale
-    assert team_coins == 441290 * decimal_scale
-    assert total_coins == 4412903 * decimal_scale
-    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
-    assert crowdsale.call().seed_coins_vault1() == 528000 * decimal_scale
-    assert crowdsale.call().seed_coins_vault2() == 0
+    assert future_round_coins == 220645161398103
+    assert foundation_coins == 39716129051658
+    assert team_coins == 44129032279620
+    assert total_coins == 441290322796206
+    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 66825
+    assert mysterium_finalize_agent.call().seed_coins_vault1() == 528000 * decimal_scale
+    assert mysterium_finalize_agent.call().seed_coins_vault2() == 0
 
 
-def test_distribution_1m(crowdsale, team_multisig):
+def test_distribution_1m(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 1M
-    crowdsale.transact().distribute(1 * 1000000, 88)
+    crowdsale = started_crowdsale
 
-    earlybird_coins = crowdsale.call().earlybird_coins()
-    regular_coins = crowdsale.call().regular_coins()
-    seed_coins = crowdsale.call().seed_coins()
-    future_round_coins = crowdsale.call().future_round_coins()
-    foundation_coins = crowdsale.call().foundation_coins()
-    team_coins = crowdsale.call().team_coins()
-    total_coins = crowdsale.call().total_coins()
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    minimum = crowdsale.call().getMinimumFundingGoal()
 
-    assert earlybird_coins == 1200000
+    assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
+    mysterium_finalize_agent.transact().distribute(1000000, 88)
+
+    assert mysterium_finalize_agent.call().earlybird_percentage() > 0
+    earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
+    regular_coins = mysterium_finalize_agent.call().regular_coins()
+    seed_coins = mysterium_finalize_agent.call().seed_coins()
+    future_round_coins = mysterium_finalize_agent.call().future_round_coins()
+    foundation_coins = mysterium_finalize_agent.call().foundation_coins()
+    team_coins = mysterium_finalize_agent.call().team_coins()
+    total_coins = mysterium_finalize_agent.call().total_coins()
+
+    decimal_scale = 10**8  # 8 decimal points, this is here for every function for reference
+
+    assert earlybird_coins == 120000000000000
     assert regular_coins == 0
-    assert seed_coins == 528000
-    assert future_round_coins == 2787096
-    assert foundation_coins == 501677
-    assert team_coins == 557419
-    assert total_coins == 5574193
-    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
-    assert crowdsale.call().seed_coins_vault1() == 528000
-    assert crowdsale.call().seed_coins_vault2() == 0
+    assert seed_coins == 52800000000000
+    assert future_round_coins == 278709677520049
+    assert foundation_coins == 50167741953608
+    assert team_coins == 55741935504009
+    assert total_coins == 557419355040099
+    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 62433
+    assert mysterium_finalize_agent.call().seed_coins_vault1() == 52800000000000
+    assert mysterium_finalize_agent.call().seed_coins_vault2() == 0
 
 
-def test_distribution_2m(crowdsale, team_multisig):
+def test_distribution_2m(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 2M
-    crowdsale.transact().distribute(2000001, 88)
+    crowdsale = started_crowdsale
 
-    earlybird_coins = crowdsale.call().earlybird_coins()
-    regular_coins = crowdsale.call().regular_coins()
-    seed_coins = crowdsale.call().seed_coins()
-    future_round_coins = crowdsale.call().future_round_coins()
-    foundation_coins = crowdsale.call().foundation_coins()
-    team_coins = crowdsale.call().team_coins()
-    total_coins = crowdsale.call().total_coins()
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    minimum = crowdsale.call().getMinimumFundingGoal()
 
-    assert earlybird_coins == 2400001
+    assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
+    mysterium_finalize_agent.transact().distribute(2000001, 88)
+
+    assert mysterium_finalize_agent.call().earlybird_percentage() > 0
+    earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
+    regular_coins = mysterium_finalize_agent.call().regular_coins()
+    seed_coins = mysterium_finalize_agent.call().seed_coins()
+    future_round_coins = mysterium_finalize_agent.call().future_round_coins()
+    foundation_coins = mysterium_finalize_agent.call().foundation_coins()
+    team_coins = mysterium_finalize_agent.call().team_coins()
+    total_coins = mysterium_finalize_agent.call().total_coins()
+
+    decimal_scale = 10**8  # 8 decimal points, this is here for every function for reference
+
+    assert earlybird_coins == 240000120000000
     assert regular_coins == 0
-    assert seed_coins == 528000
-    assert future_round_coins == 4722582
-    assert foundation_coins == 850064
-    assert team_coins == 944516
-    assert total_coins == 9445165
-    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 2
+    assert seed_coins == 52800000000000
+    assert future_round_coins == 472258258187620
+    assert foundation_coins == 85006486473771
+    assert team_coins == 94451651637524
+    assert total_coins == 944516516375240
+    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 76325
+    assert mysterium_finalize_agent.call().seed_coins_vault1() == 52800000000000
+    assert mysterium_finalize_agent.call().seed_coins_vault2() == 0
 
-    assert crowdsale.call().seed_coins_vault1() == 528000
-    assert crowdsale.call().seed_coins_vault2() == 0
 
-
-def test_distribution_5m(crowdsale, team_multisig):
+def test_distribution_5m(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 5M
-    crowdsale.transact().distribute(5 * 1000000, 88)
+    crowdsale = started_crowdsale
 
-    earlybird_coins = crowdsale.call().earlybird_coins()
-    regular_coins = crowdsale.call().regular_coins()
-    seed_coins = crowdsale.call().seed_coins()
-    future_round_coins = crowdsale.call().future_round_coins()
-    foundation_coins = crowdsale.call().foundation_coins()
-    team_coins = crowdsale.call().team_coins()
-    total_coins = crowdsale.call().total_coins()
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    minimum = crowdsale.call().getMinimumFundingGoal()
 
-    assert earlybird_coins == 6000000
+    assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
+    mysterium_finalize_agent.transact().distribute(5 * 1000000, 88)
+
+    assert mysterium_finalize_agent.call().earlybird_percentage() > 0
+    earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
+    regular_coins = mysterium_finalize_agent.call().regular_coins()
+    seed_coins = mysterium_finalize_agent.call().seed_coins()
+    future_round_coins = mysterium_finalize_agent.call().future_round_coins()
+    foundation_coins = mysterium_finalize_agent.call().foundation_coins()
+    team_coins = mysterium_finalize_agent.call().team_coins()
+    total_coins = mysterium_finalize_agent.call().total_coins()
+
+    decimal_scale = 10**8  # 8 decimal points, this is here for every function for reference
+
+    assert earlybird_coins == 600000000000000
     assert regular_coins == 0
-    assert seed_coins == 2112000
-    assert future_round_coins == 3365240
-    assert foundation_coins == 1275248
-    assert team_coins == 1416943
-    assert total_coins == 14169432
-    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 1
+    assert seed_coins == 211200000000000
+    assert future_round_coins == 336524017516625
+    assert foundation_coins == 127524890848405
+    assert team_coins == 141694323164894
+    assert total_coins == 1416943231648948
+    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 119024
+    assert mysterium_finalize_agent.call().seed_coins_vault1() == 52800000000000
+    assert mysterium_finalize_agent.call().seed_coins_vault2() == 158400000000000
 
-    assert crowdsale.call().seed_coins_vault1() == 528000
-    assert crowdsale.call().seed_coins_vault2() == 1584000
 
-
-def test_distribution_8m(crowdsale, team_multisig):
+def test_distribution_8m(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
     # 8M
-    crowdsale.transact().distribute(8 * 1000000, 88)
+    crowdsale = started_crowdsale
 
-    earlybird_coins = crowdsale.call().earlybird_coins()
-    regular_coins = crowdsale.call().regular_coins()
-    seed_coins = crowdsale.call().seed_coins()
-    future_round_coins = crowdsale.call().future_round_coins()
-    foundation_coins = crowdsale.call().foundation_coins()
-    team_coins = crowdsale.call().team_coins()
-    total_coins = crowdsale.call().total_coins()
+    assert crowdsale.call().getState() == CrowdsaleState.Funding
+    minimum = crowdsale.call().getMinimumFundingGoal()
 
-    assert earlybird_coins == 7200000
-    assert regular_coins == 2000000
-    assert seed_coins == 2640000
-    assert future_round_coins == 2690909
-    assert foundation_coins == 1614545
-    assert team_coins == 1793939
-    assert total_coins == 17939393
-    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins
+    assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
+    mysterium_finalize_agent.transact().distribute(8 * 1000000, 88)
 
-    assert crowdsale.call().seed_coins_vault1() == 528000
-    assert crowdsale.call().seed_coins_vault2() == 2112000
+    assert mysterium_finalize_agent.call().earlybird_percentage() > 0
+    earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
+    regular_coins = mysterium_finalize_agent.call().regular_coins()
+    seed_coins = mysterium_finalize_agent.call().seed_coins()
+    future_round_coins = mysterium_finalize_agent.call().future_round_coins()
+    foundation_coins = mysterium_finalize_agent.call().foundation_coins()
+    team_coins = mysterium_finalize_agent.call().team_coins()
+    total_coins = mysterium_finalize_agent.call().total_coins()
+
+    decimal_scale = 10**8  # 8 decimal points, this is here for every function for reference
+
+    assert earlybird_coins == 720000000000000
+    assert regular_coins == 200000000000000
+    assert seed_coins == 264000000000000
+    assert future_round_coins == 269090909125338
+    assert foundation_coins == 161454545475202
+    assert team_coins == 179393939416892
+    assert total_coins == 1793939394168921
+    assert total_coins == earlybird_coins + regular_coins + seed_coins + future_round_coins + foundation_coins + team_coins + 151489
+    assert mysterium_finalize_agent.call().seed_coins_vault1() == 52800000000000
+    assert mysterium_finalize_agent.call().seed_coins_vault2() == 211200000000000
