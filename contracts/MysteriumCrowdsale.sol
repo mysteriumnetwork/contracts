@@ -69,6 +69,14 @@ contract MysteriumCrowdsale is Crowdsale {
   }
 
   /**
+   * @return true we have reached our soft cap
+   */
+  function isSoftCapReached() public constant returns (bool reached) {
+    return weiRaised >= MysteriumPricing(pricingStrategy).getSoftCapInWeis();
+  }
+
+
+  /**
    * Dynamically create tokens and assign them to the investor.
    */
   function assignTokens(address receiver, uint tokenAmount) private {

@@ -197,7 +197,10 @@ def test_bitcoin_suisse(chain, ready_crowdsale, bitcoin_suisse, mysterium_pricin
 
 
 def test_set_minimum_funding_goal(crowdsale, team_multisig):
-    """Reset minimum funding goal"""
+    """Reset minimum funding goal
+
+    Spec 3.4.
+    """
 
     # Original goal
     # We lose ~1 ETH precision in the conversions
@@ -210,6 +213,31 @@ def test_set_minimum_funding_goal(crowdsale, team_multisig):
     # We lose ~1 ETH precision in the conversions
     new_goal_chf = in_chf(crowdsale.call().getMinimumFundingGoal())
     assert abs(new_goal_chf - 8123123) < 10
+
+
+def test_trigger_soft_cap(started_crowdsale, team_multisig, customer, mysterium_pricing):
+    """See that the soft cap trigger causes the end time rewind."""
+
+    crowdsale = started_crowdsale
+
+    # Cannot trigger soft cap until the soft cap is reached
+    with pytest.raises(TransactionFailed):
+        crowdsale.transact({"from": customer}).triggerSoftCap()
+
+    # Some generous person comes and buy all tokens in the soft cap
+    cap = mysterium_pricing.call().getSoftCapInWeis()
+    crowdsale.transact({"from": customer, "value": cap}).buy()
+
+    # We reached the cap
+    assert crowdsale.call().isSoftCapReached()
+
+    old_ends_at = crowdsale.call().endsAt()
+    crowdsale.transact({"from": customer}).triggerSoftCap()
+    new_ends_at = crowdsale.call().endsAt()
+
+    # Now buyers need to hurry
+    assert new_ends_at < old_ends_at
+
 
 
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
