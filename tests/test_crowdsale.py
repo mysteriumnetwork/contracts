@@ -20,6 +20,12 @@ def in_chf(wei):
     return int(from_wei(wei, "ether") * 120)
 
 
+@pytest.fixture
+def bitcoin_suisse(accounts) -> str:
+    """Fixture for BitcoinSuisse address."""
+    return accounts[9]
+
+
 
 @pytest.fixture
 def mysterium_token(chain, team_multisig, token_name, token_symbol, initial_supply) -> Contract:
@@ -99,13 +105,20 @@ def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preic
 
 
 @pytest.fixture()
-def started_crowdsale(chain, crowdsale, mysterium_token, mysterium_finalize_agent, team_multisig):
-    """Crowdsale that has been time traveled to funding state."""
-    # Setup crowdsale to Funding state
-
-    crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address) # Must be done before sending
+def ready_crowdsale(crowdsale, mysterium_token, mysterium_finalize_agent, team_multisig):
+    """Crowdsale waiting the time to start."""
+    crowdsale.transact({"from": team_multisig}).setFinalizeAgent(mysterium_finalize_agent.address)  # Must be done before sending
     mysterium_token.transact({"from": team_multisig}).setReleaseAgent(mysterium_finalize_agent.address)
     mysterium_token.transact({"from": team_multisig}).setTransferAgent(mysterium_finalize_agent.address, True)
+    return crowdsale
+
+
+@pytest.fixture()
+def started_crowdsale(chain, ready_crowdsale):
+    """Crowdsale that has been time traveled to funding state."""
+    # Setup crowdsale to Funding state
+    crowdsale = ready_crowdsale
+
     time_travel(chain, crowdsale.call().startsAt() + 1)
     assert crowdsale.call().getState() == CrowdsaleState.Funding
     return crowdsale
@@ -159,6 +172,28 @@ def test_set_rate_late(chain, crowdsale, mysterium_pricing, team_multisig):
     time_travel(chain, crowdsale.call().startsAt()+1)
     with pytest.raises(TransactionFailed):
         mysterium_pricing.transact({"from": team_multisig}).setConversionRate(130 * 10000)
+
+
+def test_bitcoin_suisse(chain, ready_crowdsale, bitcoin_suisse, mysterium_pricing, team_multisig):
+    """"Test BitcoinSuisse address whitelisting.
+
+    Spec 3.2.
+    """
+
+    crowdsale = ready_crowdsale
+
+    # Cannot transact initially
+    assert crowdsale.call().getState() == CrowdsaleState.PreFunding
+
+    with pytest.raises(TransactionFailed):
+        crowdsale.transact({"from": bitcoin_suisse, "value": to_wei(10000, "ether")}).buy()
+
+    # Now let's set rate and whitelist
+    mysterium_pricing.transact({"from": team_multisig}).setConversionRate(130 * 10000)
+    crowdsale.transact({"from": team_multisig}).setEarlyParicipantWhitelist(bitcoin_suisse, True)
+
+    # Now BitcoinSuisse can execute
+    crowdsale.transact({"from": bitcoin_suisse, "value": to_wei(10000, "ether")}).buy()
 
 
 def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_starts_at, customer, mysterium_finalize_agent, started_crowdsale, team_multisig):
