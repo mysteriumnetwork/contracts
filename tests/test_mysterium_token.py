@@ -13,6 +13,7 @@ from ico.tests.utils import time_travel
 from ico.state import CrowdsaleState
 from ico.utils import decimalize_token_amount
 
+
 @pytest.fixture
 def mysterium_token(chain, team_multisig, token_name, token_symbol, initial_supply) -> Contract:
     """Create the token contract."""

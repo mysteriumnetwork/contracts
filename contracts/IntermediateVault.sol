@@ -22,6 +22,7 @@ contract IntermediateVault  {
   uint256 public unlockedAt;
 
   event Unlocked();
+  event Paid(address sender, uint amount);
 
   function IntermediateVault(address _teamMultisig, uint _unlockedAt) {
 
@@ -43,7 +44,9 @@ contract IntermediateVault  {
     Unlocked();
   }
 
-  // disallow ETH payment for this vault
-  function () { throw; }
+  function () public payable {
+    // Collect deposits from the crowdsale
+    Paid(msg.sender, msg.value);
+  }
 
 }

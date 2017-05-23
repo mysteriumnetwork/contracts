@@ -75,6 +75,10 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // foundation coins
     // team coins
 
+    if(msg.sender == address(crowdsale) || msg.sender == owner) {
+      // Only crowdsal contract or owner (manually) can trigger the distribution
+      throw;
+    }
 
     // step 1
     if (amount_raised_chf <= SOFT_CAP_CHF) {
