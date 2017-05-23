@@ -20,6 +20,8 @@
 
 * Team funds are transferred through a 30 days delay vault (IntermediateVault)
 
+* The crowdsale can be stopped in emergency (Haltable)
+
 ## Installation
 
 OSX or Linux required.
