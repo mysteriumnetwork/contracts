@@ -1,5 +1,25 @@
 
 
+## Mysterium token and crowdsale features
+
+* Zeppelin StandardToken with upgradeable trait (Golem like) and releaseable (owner can decide when tokens are transferred)
+
+* Tokens are minted during the crowdsale (MysteriumCrowdsale.assignTokens)
+
+* Extra tokens for founders, seed round, etc. are minted after the crowdsale is over (MysteriumTokenDistribution.distribute)
+
+* Crowdsale priced in CHF (MysteriumPricing.setConversionRate)
+
+* Pricing has soft and hard cap (MysteriumPricing.calculatePrice)
+
+* Reaching soft cap triggers 72 hours closing time (MysteriumCrowdsale.triggerSoftCap)
+
+* Crowdsale can whitelist early participants (Crowdsale.setEarlyParicipantWhitelist)
+
+* Tokens are deposited to time locked vaults (MultiVault)
+
+* Team funds are transferred through a 30 days delay vault (IntermediateVault)
+
 ## Installation
 
 OSX or Linux required.
