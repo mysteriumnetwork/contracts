@@ -1,7 +1,6 @@
 pragma solidity ^0.4.8;
 
 /**
- * TODO
  *
  * Time-locked token vault of money being transferred into team multisig.
  *
