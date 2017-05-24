@@ -2,7 +2,7 @@ pragma solidity ^0.4.8;
 
 /**
  *
- * Time-locked token vault of money being transferred into team multisig.
+ * Time-locked ETH vault of money being transferred into team multisig.
  *
  * Add 4 weeks delay to the transfer to the team multisig wallet.
  *
