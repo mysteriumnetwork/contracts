@@ -202,7 +202,7 @@ contract MultiVault is Ownable {
    * Resolve the contract umambigious state.
    */
   function getState() public returns(State) {
-    if(now > freezeEndsAt) {
+    if(now > freezeEndsAt && initialTokenBalanceFetched) {
       return State.Distributing;
     } else {
       return State.Holding;

@@ -31,8 +31,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   address futureRoundVault;
   address foundationVault;
   address teamVault;
-  address seedVault1;
-  address seedVault2;
+  address seedVault1; //  0
+  address seedVault2; //  12 months
 
   // Constants for distribute()
   uint SOFT_CAP_CHF = 6000000;

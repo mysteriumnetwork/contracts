@@ -76,6 +76,27 @@ def mysterium_multivault(chain, mysterium_mv_token, freeze_ends_at, customer, cu
     return contract
 
 
+@pytest.fixture
+def mysterium_multivault_zero_days(chain, mysterium_mv_token, freeze_ends_at, customer, customer_2, team_multisig) -> Contract:
+    """A vault that unlocks immediately."""
+    args = [
+        team_multisig,
+        1
+    ]
+
+    tx = {
+        "from": team_multisig
+    }
+
+    contract, hash = chain.provider.deploy_contract('MultiVault', deploy_args=args, deploy_transaction=tx)
+    contract.transact({"from": team_multisig}).setToken(mysterium_mv_token.address)
+    contract.transact({"from": team_multisig}).addInvestor(customer, 30)
+    contract.transact({"from": team_multisig}).addInvestor(customer_2, 35)
+    contract.transact({"from": team_multisig}).addInvestor(customer_2, 35)
+    return contract
+
+
+
 def test_multi_vault_initial(mysterium_multivault, customer, customer_2, freeze_ends_at, team_multisig):
     """Multi vault holds the initial balances and state."""
 
@@ -187,3 +208,47 @@ def test_multi_vault_claim_early(chain, mysterium_multivault, preico_starts_at, 
     # Early claim request fails
     with pytest.raises(TransactionFailed):
         mysterium_multivault.transact({"from": customer}).claim(1)
+
+
+def test_multi_vault_distribute_require_fetch(chain, mysterium_multivault_zero_days, preico_starts_at, mysterium_mv_token, team_multisig, customer, customer_2, mysterium_release_agent):
+    """Zero time vault should not allow access tokens before the owner allows it."""
+
+    mysterium_multivault = mysterium_multivault_zero_days
+
+    assert mysterium_mv_token.call().released()
+    assert mysterium_mv_token.call().balanceOf(customer) == 0
+    assert mysterium_mv_token.call().totalSupply() == 200
+
+    # Load all 100% tokens to the vault for the test
+    mysterium_mv_token.transact({"from": team_multisig}).transfer(mysterium_multivault.address, mysterium_mv_token.call().totalSupply())
+    assert mysterium_mv_token.call().balanceOf(mysterium_multivault.address) == mysterium_mv_token.call().totalSupply()
+
+    # Early claim request fails
+    with pytest.raises(TransactionFailed):
+        mysterium_multivault.transact({"from": customer}).claim(1)
+
+    assert mysterium_multivault.call().getState() == MultiVaultState.Holding
+
+    # Set the distribution balance
+    mysterium_multivault.transact({"from": team_multisig}).fetchTokenBalance()
+
+    assert mysterium_multivault.call().getState() == MultiVaultState.Distributing
+
+    # Check we calculate claims correctly
+    assert mysterium_multivault.call().getClaimAmount(customer) + mysterium_multivault.call().getClaimAmount(customer_2) == 200
+    assert mysterium_multivault.call().getClaimLeft(customer) + mysterium_multivault.call().getClaimLeft(customer_2) == 200
+
+    # First customer gets his tokens
+    assert mysterium_multivault.call().getClaimAmount(customer) == 60
+    mysterium_multivault.transact({"from": customer}).claimAll()
+    assert mysterium_mv_token.call().balanceOf(customer) == 60  # 200*3/10
+    assert mysterium_multivault.call().getClaimLeft(customer) == 0
+
+    # Then customer 2 claims his tokens in two batches
+    mysterium_multivault.transact({"from": customer_2}).claim(20)
+    assert mysterium_mv_token.call().balanceOf(customer_2) == 20
+
+    assert mysterium_multivault.call().getClaimLeft(customer_2) == 120
+    mysterium_multivault.transact({"from": customer_2}).claim(120)
+    assert mysterium_mv_token.call().balanceOf(customer_2) == 140
+    assert mysterium_multivault.call().getClaimLeft(customer_2) == 0
