@@ -221,17 +221,21 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     return true;
   }
 
+  function getDistributionFacts() public constant returns (uint chfRaised, uint chfRate) {
+    uint _chfRate = mysteriumPricing.getEthChfPrice();
+    return(crowdsale.weiRaised().times(_chfRate) / (10**18), _chfRate);
+  }
+
   /** Called once by crowdsale finalize() if the sale was success. */
   function finalizeCrowdsale() {
     if(msg.sender == address(crowdsale) || msg.sender == owner) {
       // The owner can distribute tokens for testing and in emergency
       // Crowdsale distributes tokens at the end of the crowdsale
-      uint chfRate = mysteriumPricing.getEthChfPrice();
-      distribute(crowdsale.weiRaised()/chfRate, chfRate);
+      var (chfRaised, chfRate) = getDistributionFacts();
+      // distribute(chfRaised, chfRate);
     } else {
        throw;
     }
-
   }
 
 }

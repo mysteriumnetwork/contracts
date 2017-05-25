@@ -78,3 +78,5 @@ crowdsales/*.yml
 *.csv
 
 contracts/PreICOProxyBuyer.sol
+tests
+tests/test_preico_proxy_buy.py
