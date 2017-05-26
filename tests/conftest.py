@@ -1,5 +1,5 @@
 """Test fixtures."""
-
+import datetime
 
 import pytest
 from web3.contract import Contract
@@ -12,6 +12,18 @@ from ico.tests.fixtures.flatprice import *  # noqa
 from ico.tests.fixtures.releasable import *  # noqa
 from ico.tests.fixtures.finalize import *  # noqa
 from ico.tests.fixtures.presale import *  # noqa
+
+
+@pytest.fixture
+def starts_at() -> int:
+    """When pre-ico opens"""
+    return int(datetime.datetime(2017, 1, 1).timestamp())
+
+
+@pytest.fixture
+def ends_at() -> int:
+    """When pre-ico closes"""
+    return int(datetime.datetime(2017, 2, 3).timestamp())
 
 
 @pytest.fixture
@@ -67,15 +79,15 @@ def mysterium_pricing(chain, preico_token_price, team_multisig) -> Contract:
 
 
 @pytest.fixture
-def crowdsale(chain, mysterium_token, mysterium_pricing, preico_starts_at, preico_ends_at, preico_funding_goal, team_multisig) -> Contract:
+def crowdsale(chain, mysterium_token, mysterium_pricing, starts_at, ends_at, preico_funding_goal, team_multisig) -> Contract:
     token = mysterium_token
 
     args = [
         token.address,
         mysterium_pricing.address,
         team_multisig,
-        preico_starts_at,
-        preico_ends_at,
+        starts_at,
+        ends_at,
     ]
     tx = {
         "from": team_multisig,

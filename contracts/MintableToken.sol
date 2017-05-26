@@ -34,7 +34,7 @@ contract MintableToken is StandardToken, Ownable {
 
     totalSupply = totalSupply.plus(amount);
     balances[receiver] = balances[receiver].plus(amount);
-    Transfer(0, receiver, amount);
+    Minted(receiver, amount);
   }
 
   /**
