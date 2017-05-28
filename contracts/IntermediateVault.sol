@@ -29,16 +29,22 @@ contract IntermediateVault  {
     unlockedAt = _unlockedAt;
 
     // Sanity check
-    if (teamMultisig == 0x0) throw;
+    if(teamMultisig == 0x0)
+      throw;
+
+    // Sanity check for time, if we would like to have immediate release,
+    // we don't should not use this Vault at all.
+    if(now > _unlockedAt || _unlockedAt == 0)
+      throw;
   }
 
   /// @notice Transfer locked tokens to Lunyr's multisig wallet
   function unlock() public {
     // Wait your turn!
-    if (now < unlockedAt) throw;
+    if(now < unlockedAt) throw;
 
     // StandardToken will throw in the case of transaction fails
-    if(!teamMultisig.send(address(this).balance)) throw;
+    if(!teamMultisig.send(address(this).balance)) throw; // Should this forward gas, since we trust the wallet?
 
     Unlocked();
   }
