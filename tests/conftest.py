@@ -54,9 +54,6 @@ def mysterium_finalize_agent(team_multisig, chain, mysterium_token, crowdsale, m
     contract, hash = chain.provider.deploy_contract('MysteriumTokenDistribution', deploy_args=args, deploy_transaction=tx)
 
     contract.transact({"from": team_multisig}).setVaults(
-        _earlybirdVault=accounts[0],
-        _regularVault=accounts[0],
-        _seedVault=accounts[0],
         _futureRoundVault=accounts[0],
         _foundationVault=accounts[0],
         _teamVault=accounts[0],
