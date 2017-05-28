@@ -1,0 +1,186 @@
+mainnet:
+
+    chain: mainnet
+
+    verify_on_etherscan: yes
+
+    # Firefox 53b has an issue that prevents correct Selenium automated
+    # interaction with Etherscan form.
+    # http://stackoverflow.com/q/43175013/315168
+    browser_driver: chrome
+
+    #
+    # Contracts section defines different smart contracts that
+    # are required to run the ICO.
+    #
+    contracts:
+
+        team_multisig_funds:
+            contract_name: MultiSigWallet
+            contract_file: GnosisWallet.sol
+            address: 0xce02e7f6cb7a541d62257a4c2f12d850bae157fe
+
+        # Foundation wallet for tokens
+        team_multisig_foundation:
+            contract_name: MultiSigWallet
+            contract_file: GnosisWallet.sol
+            address: 0xca101dd1a5e3b8b4f2240820601d659d8f930d6b
+
+        #
+        # Token contract
+        #
+        # This contract represents ERC-20 token.
+        # It has transfer lock up functionality to prevent the token to be transferable
+        # until the ICO is over. Furthermore it has dynamic minting supply,
+        # so that the crowdsale contract will create new tokens as investment arrives in.
+        # This way, there is no need for a separate burn stage at the end of the crowdsale,
+        # as we never create the exceeding supply.
+        #
+        #
+        token:
+            contract_name: CrowdsaleToken
+            contract_file: CrowdsaleToken.sol
+            arguments:
+                _name: Muiresym
+                _symbol: TSYM
+                _initialSupply: 0
+                _decimals: 8
+        #
+        # Pricing strategy
+        #
+        pricing_strategy:
+            contract_name: MysteriumPricing
+            contract_file: MysteriumPricing.sol
+            arguments:
+                _initialChfRate: "{{ 188 * 10000 }}"
+
+        preico:
+            contract_name: PreICOProxyBuyer
+            contract_file: PreICOProxyBuyer.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 0 }}"  # We can move funds to ICO right away in the testnet
+                _weiMinimumLimit: "{{ 0 }}"  # We can move funds to ICO right away in the testnet
+
+        #
+        # Intermediate vault to hold team funds for 4 weeks
+        #
+        intermediate_vault:
+            contract_name: IntermediateVault
+            contract_file: IntermediateVault.sol
+            arguments:
+                _teamMultisig: "{{ team_multisig_funds.address }}"
+                _unlockedAt: "{{ 0 }}"  # Testnet
+
+        seed_participant_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 1 }}"  # Opens immediately
+
+        seed_participant_vault_2:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ time() + 12*30*24*3600 }}"  # 12 months
+
+        founders_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 0 }}"  # Testnet
+
+        future_funding_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 0 }}"  # Testnet
+
+        # Crowdsale
+        #
+        # This is the actual crowdsale contract.
+        # It will accept investments during the crowdsale time period.
+        # For each investments, it asks the pricing contract for the
+        # current price for this particular investor.
+        #
+        #
+        #
+        crowdsale:
+            contract_name: MysteriumCrowdsale
+            contract_file: MysteriumCrowdsale.sol
+            arguments:
+                _token: "{{contracts.token.address}}"
+                _pricingStrategy: "{{contracts.pricing_strategy.address}}"
+                _multisigWallet: "{{contracts.team_multisig.address}}"
+                _start: "{{ timestamp(datetime(2017, 4, 18, 9, 30)) }}"
+                _end: "{{ timestamp(datetime(2017, 6, 18, 9, 30)) }}"
+        #
+        # At the end of the crowdsale
+        # sold tokens: 30%
+        # team tokens: 70%
+        #
+        token_distribution:
+            contract_name: MysteriumTokenDistribution
+            contract_file: MysteriumTokenDistribution.sol
+            arguments:
+                _token: "{{contracts.token.address}}"
+                _crowdsale: "{{contracts.crowdsale.address}}"
+                _mysteriumPricing: "{{pricing_strategy.address}}"
+
+    # Post-deployment actions connect contracts together.
+    post_actions: |
+
+        # Enable new token minting by a crowdsale contract
+        confirm_tx(token.transact({"from": deploy_address}).setMintAgent(crowdsale.address, True))
+
+        # Track participants
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setRequireCustomerId(True))
+
+        # Enable token mintint at the end of the crowdsale to create bonus pool, founder pool and such
+        confirm_tx(token.transact({"from": deploy_address}).setMintAgent(finalize_agent.address, True))
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setFinalizeAgent(finalize_agent.address))
+        confirm_tx(token.transact({"from": deploy_address}).setReleaseAgent(finalize_agent.address))
+
+        # Move ownership of all owned contracts to the team multisig address
+        # confirm_tx(crowdsale.transact({"from": deploy_address}).transferOwnership(team_multisig.address))
+        confirm_tx(token.transact({"from": deploy_address}).transferOwnership(team_multisig.address))
+
+        # Set token upgrade master to team multisig to give the new token path
+        confirm_tx(token.transact({"from": deploy_address}).setUpgradeMaster(team_multisig.address))
+
+        # Allow test buys from these accounts
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist(deploy_address, True))
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist("0x1c5e4db864861D9b6203bd86Af0C0B5ffcD6115d", True))
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist("0x73cd5cb24682239cF38732B3740a193cf6CE83ac", True))
+
+        # Set token distribution
+        confirm_tx(
+            token_distribution.transact().setVaults(
+                _futureRoundVault=future_funding_vault.address,
+                _foundationVault=founders_vault.address,
+                _teamVault=founders_vault.address,
+                _seedVault1=seed_participant_vault.address,
+                _seedVault2=seed_participant_vault.address,
+            )
+        )
+
+        # Load vault data
+
+        # Founders vault goes 100% to team multisig
+        confirm_tx(founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100))
+
+        # Future funding vault goes 100% to team multisig
+        confirm_tx(future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100))
+
+    # Sanity check
+    verify_actions: |
+        assert token.call().owner().lower() == team_multisig.address.lower()
+        assert crowdsale.call().owner().lower() == deploy_address.lower()
+        assert crowdsale.call().multisigWallet().lower() == team_multisig.address.lower()
+        assert finalize_agent.call().teamMultisig().lower() == team_multisig.address.lower()
+        assert finalize_agent.call().isSane()
+        assert crowdsale.call().getState() == CrowdsaleState.PreFunding
