@@ -55,7 +55,7 @@ def mysterium_finalize_agent(team_multisig, chain, mysterium_token, crowdsale, m
 
     contract.transact({"from": team_multisig}).setVaults(
         _futureRoundVault=accounts[0],
-        _foundationVault=accounts[0],
+        _foundationWallet=accounts[0],
         _teamVault=accounts[0],
         _seedVault1=accounts[0],
         _seedVault2=accounts[0])  # TODO: Use actual contracts here
