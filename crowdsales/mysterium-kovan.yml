@@ -108,7 +108,7 @@ kovan:
                 _token: "{{contracts.token.address}}"
                 _pricingStrategy: "{{contracts.pricing_strategy.address}}"
                 _multisigWallet: "{{contracts.intermediate_vault.address}}"
-                _start: "{{ timestamp(datetime(2000, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
+                _start: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
                 _end: "{{ timestamp(datetime(2017, 6, 30, 13, 00)) }}"
         #
         # At the end of the crowdsale
@@ -139,7 +139,10 @@ kovan:
         # Set token upgrade master to team multisig to give the new token path
         confirm_tx(token.transact({"from": deploy_address}).setUpgradeMaster(team_multisig_funds.address))
 
-        # Allow test buys from these accounts
+        # Allow pricing strategy to read crowdsale for the CHF rate chec
+        confirm_tx(pricing_strategy.transact({"from": deploy_address}).setCrowdsale(crowdsale.address))
+
+        # Allow test buys from these accounts before crowdsale begins
         confirm_multiple_txs( \
           crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist(deploy_address, True), \
           crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist("0x1c5e4db864861D9b6203bd86Af0C0B5ffcD6115d", True), \
@@ -153,8 +156,18 @@ kovan:
                 _foundationWallet=team_multisig_foundation.address, \
                 _teamVault=founders_vault.address, \
                 _seedVault1=seed_participant_vault.address, \
-                _seedVault2=seed_participant_vault.address, \
+                _seedVault2=seed_participant_vault_2.address, \
             ) \
+        )
+
+        #
+        # Set vault crowdsale data
+        #
+        confirm_multiple_txs( \
+            seed_participant_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            seed_participant_vault_2.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            future_funding_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            founders_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
         )
 
         #
@@ -163,9 +176,17 @@ kovan:
 
         # Founders vault goes 100% to team multisig
         confirm_multiple_txs( \
-          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
+          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_funds.address, 100), \
           future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
         )
+
+        # Seed vault 1
+        # TODO - using a test value as one address
+        confirm_multiple_txs(*load_investor_data(seed_participant_vault, deploy_address, "fake_seed_investor_data.csv"))
+
+        # Seed vault 2
+        # TODO - using a test value as one address
+        confirm_multiple_txs(*load_investor_data(seed_participant_vault_2, deploy_address, "fake_seed_investor_data.csv"))
 
     # Sanity check
     verify_actions: |
@@ -174,3 +195,5 @@ kovan:
         assert crowdsale.call().multisigWallet().lower() == intermediate_vault.address.lower()
         assert token_distribution.call().isSane()
         assert crowdsale.call().getState() in (CrowdsaleState.PreFunding, CrowdsaleState.Funding)
+        assert seed_participant_vault.call().investorCount() == 33, "Got investor count: {}".format(seed_participant_vault.call().investorCount())
+        assert seed_participant_vault_2.call().investorCount() == 33, "Got investor count: {}".format(seed_participant_vault_2.call().investorCount())

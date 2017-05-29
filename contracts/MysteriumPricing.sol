@@ -27,7 +27,7 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   uint public softCapCHF = 6000000 * 10000; // Soft cap set in CHF
 
   //Address of the ICO contract:
-  Crowdsale crowdsale;
+  Crowdsale public crowdsale;
 
   function MysteriumPricing(uint initialChfRate) {
     chfRate = initialChfRate;
@@ -36,6 +36,11 @@ contract MysteriumPricing is PricingStrategy, Ownable {
   /// @dev Setting crowdsale for setConversionRate()
   /// @param _crowdsale The address of our ICO contract
   function setCrowdsale(Crowdsale _crowdsale) onlyOwner {
+
+    if(!_crowdsale.isCrowdsale()) {
+      throw;
+    }
+
     crowdsale = _crowdsale;
   }
 

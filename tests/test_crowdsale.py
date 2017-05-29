@@ -190,7 +190,7 @@ def test_distribution_700k(chain, mysterium_token, preico_funding_goal, preico_s
     minimum = crowdsale.call().getMinimumFundingGoal()
 
     assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
-    mysterium_finalize_agent.transact().distribute(700000, 88)
+    mysterium_finalize_agent.transact({"from": team_multisig}).distribute(700000, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
@@ -226,7 +226,7 @@ def test_distribution_1m(chain, mysterium_token, preico_funding_goal, preico_sta
     minimum = crowdsale.call().getMinimumFundingGoal()
 
     assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
-    mysterium_finalize_agent.transact().distribute(1000000, 88)
+    mysterium_finalize_agent.transact({"from": team_multisig}).distribute(1000000, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
@@ -259,7 +259,7 @@ def test_distribution_2m(chain, mysterium_token, preico_funding_goal, preico_sta
     minimum = crowdsale.call().getMinimumFundingGoal()
 
     assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
-    mysterium_finalize_agent.transact().distribute(2000001, 88)
+    mysterium_finalize_agent.transact({"from": team_multisig}).distribute(2000001, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
@@ -292,7 +292,7 @@ def test_distribution_5m(chain, mysterium_token, preico_funding_goal, preico_sta
     minimum = crowdsale.call().getMinimumFundingGoal()
 
     assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
-    mysterium_finalize_agent.transact().distribute(5 * 1000000, 88)
+    mysterium_finalize_agent.transact({"from": team_multisig}).distribute(5 * 1000000, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()
@@ -325,7 +325,7 @@ def test_distribution_8m(chain, mysterium_token, preico_funding_goal, preico_sta
     minimum = crowdsale.call().getMinimumFundingGoal()
 
     assert  mysterium_token.call().transferAgents(mysterium_finalize_agent.address) == True
-    mysterium_finalize_agent.transact().distribute(8 * 1000000, 88)
+    mysterium_finalize_agent.transact({"from": team_multisig}).distribute(8 * 1000000, 88)
 
     assert mysterium_finalize_agent.call().earlybird_percentage() > 0
     earlybird_coins = mysterium_finalize_agent.call().earlybird_coins()

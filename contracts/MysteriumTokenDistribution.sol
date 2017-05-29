@@ -19,7 +19,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   CrowdsaleToken public token;
   Crowdsale public crowdsale;
 
-  MysteriumPricing mysteriumPricing;
+  MysteriumPricing public mysteriumPricing;
 
   // Vaults:
   address futureRoundVault;
@@ -56,23 +56,31 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   function MysteriumTokenDistribution(CrowdsaleToken _token, Crowdsale _crowdsale, MysteriumPricing _mysteriumPricing) {
     token = _token;
     crowdsale = _crowdsale;
-    if(address(crowdsale) == 0) {
+
+    // Interface check
+    if(!crowdsale.isCrowdsale()) {
       throw;
     }
 
     mysteriumPricing = _mysteriumPricing;
   }
 
+  /**
+   * Post crowdsale distribution process.
+   *
+   * Exposed as public to make it testable.
+   */
   function distribute(uint amount_raised_chf, uint eth_chf_price) {
+
+    // Only crowdsale contract or owner (manually) can trigger the distribution
+    if(!(msg.sender == address(crowdsale) || msg.sender == owner)) {
+      throw;
+    }
+
     // Distribute:
     // seed coins
     // foundation coins
     // team coins
-
-    if(msg.sender == address(crowdsale) || msg.sender == owner) {
-      // Only crowdsal contract or owner (manually) can trigger the distribution
-      throw;
-    }
 
     // step 1
     if (amount_raised_chf <= SOFT_CAP_CHF) {
@@ -102,7 +110,6 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
 
     // step 4
     seed_coins = SEED_RAISED_ETH.times(eth_chf_price).times(seed_multiplier);
-
 
     // step 5
     // 2M - 50%
@@ -145,6 +152,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
 
     // restore
     // Send to all the wallets (before dividing with multiplier?)
+
 
     if(future_round_coins > 0) {
       token.mint(futureRoundVault, future_round_coins);
@@ -205,7 +213,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   }
 
   /** Called once by crowdsale finalize() if the sale was success. */
-  function finalizeCrowdsale() {
+  function finalizeCrowdsale() public {
+
     if(msg.sender == address(crowdsale) || msg.sender == owner) {
       // The owner can distribute tokens for testing and in emergency
       // Crowdsale distributes tokens at the end of the crowdsale
