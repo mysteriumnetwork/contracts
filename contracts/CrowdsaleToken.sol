@@ -20,6 +20,8 @@ import "./SafeMathLib.sol";
  */
 contract CrowdsaleToken is ReleasableToken, MintableToken, UpgradeableToken {
 
+  event UpdatedTokenInformation(string newName, string newSymbol);
+
   string public name;
 
   string public symbol;
@@ -63,6 +65,16 @@ contract CrowdsaleToken is ReleasableToken, MintableToken, UpgradeableToken {
    */
   function canUpgrade() public constant returns(bool) {
     return released;
+  }
+
+  /**
+   * Owner can update token information here
+   */
+  function setTokenInformation(string _name, string _symbol) onlyOwner {
+    name = _name;
+    symbol = _symbol;
+
+    UpdatedTokenInformation(name, symbol);
   }
 
 }

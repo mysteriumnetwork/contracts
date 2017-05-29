@@ -19,9 +19,6 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   CrowdsaleToken public token;
   Crowdsale public crowdsale;
 
-  /** Where we move the tokens at the end of the sale. */
-  address public teamMultisig;
-
   MysteriumPricing mysteriumPricing;
 
   // Vaults:
@@ -213,7 +210,7 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
       // The owner can distribute tokens for testing and in emergency
       // Crowdsale distributes tokens at the end of the crowdsale
       var (chfRaised, chfRate) = getDistributionFacts();
-      // distribute(chfRaised, chfRate);
+      distribute(chfRaised, chfRate);
     } else {
        throw;
     }
