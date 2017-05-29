@@ -25,11 +25,8 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   MysteriumPricing mysteriumPricing;
 
   // Vaults:
-  address earlybirdVault;
-  address regularVault;
-  address seedVault;
   address futureRoundVault;
-  address foundationVault;
+  address foundationWallet;
   address teamVault;
   address seedVault1; //  0
   address seedVault2; //  12 months
@@ -152,24 +149,12 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     // restore
     // Send to all the wallets (before dividing with multiplier?)
 
-    if(earlybird_coins > 0) {
-      token.mint(earlybirdVault, earlybird_coins);
-    }
-
-    if(regular_coins > 0) {
-      token.mint(regularVault, regular_coins);
-    }
-
-    if(seed_coins > 0) {
-      token.mint(seedVault, seed_coins);
-    }
-
     if(future_round_coins > 0) {
       token.mint(futureRoundVault, future_round_coins);
     }
 
     if(foundation_coins > 0) {
-      token.mint(foundationVault, foundation_coins);
+      token.mint(foundationWallet, foundation_coins);
     }
 
     if(team_coins > 0) {
@@ -197,20 +182,15 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
   }
 
   /// @dev Here you can set all the Vaults
-  function setVaults(address _earlybirdVault,
-    address _regularVault,
-    address _seedVault,
+  function setVaults(
     address _futureRoundVault,
-    address _foundationVault,
+    address _foundationWallet,
     address _teamVault,
     address _seedVault1,
     address _seedVault2
   ) onlyOwner {
-    earlybirdVault = _earlybirdVault;
-    regularVault = _regularVault;
-    seedVault = _seedVault;
     futureRoundVault = _futureRoundVault;
-    foundationVault = _foundationVault;
+    foundationWallet = _foundationWallet;
     teamVault = _teamVault;
     seedVault1 = _seedVault1;
     seedVault2 = _seedVault2;
