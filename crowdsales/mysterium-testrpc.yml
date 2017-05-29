@@ -109,7 +109,7 @@ kovan:
                 _token: "{{contracts.token.address}}"
                 _pricingStrategy: "{{contracts.pricing_strategy.address}}"
                 _multisigWallet: "{{contracts.intermediate_vault.address}}"
-                _start: "{{ timestamp(datetime(2000, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
+                _start: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
                 _end: "{{ timestamp(datetime(2017, 6, 30, 13, 00)) }}"
         #
         # At the end of the crowdsale
@@ -181,13 +181,13 @@ kovan:
           future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
         )
 
-        # Do not load during the deployment. Takes 33 txs that may risk the deployment. Load separately.
         # Seed vault 1
-        # confirm_multiple_txs(*load_investor_data(seed_participant_vault, deploy_address, "fake_seed_investor_data.csv"))
+        # TODO - using a test value as one address
+        confirm_multiple_txs(*load_investor_data(seed_participant_vault, deploy_address, "fake_seed_investor_data.csv"))
 
         # Seed vault 2
         # TODO - using a test value as one address
-        # confirm_multiple_txs(*load_investor_data(seed_participant_vault_2, deploy_address, "fake_seed_investor_data.csv"))
+        confirm_multiple_txs(*load_investor_data(seed_participant_vault_2, deploy_address, "fake_seed_investor_data.csv"))
 
     # Sanity check
     verify_actions: |
@@ -196,6 +196,8 @@ kovan:
         assert crowdsale.call().multisigWallet().lower() == intermediate_vault.address.lower()
         assert token_distribution.call().isSane()
         assert crowdsale.call().getState() in (CrowdsaleState.PreFunding, CrowdsaleState.Funding)
+        assert seed_participant_vault.call().investorCount() == 33, "Got investor count: {}".format(seed_participant_vault.call().investorCount())
+        assert seed_participant_vault_2.call().investorCount() == 33, "Got investor count: {}".format(seed_participant_vault_2.call().investorCount())
 
         # As the last action, after successful deployment, set the right token symbol and name so that it shows in a blockchain explorer
         confirm_tx(token.transact({"from": deploy_address}).setTokenInformation("Xterium", "XXX"))

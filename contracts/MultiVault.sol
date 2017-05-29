@@ -99,6 +99,12 @@ contract MultiVault is Ownable {
 
     bool existing = balances[investor] > 0;
 
+    if(existing) {
+      // Guarantee data load against race conditiosn
+      // and fat fingers, so that we can load one investor only once
+      throw;
+    }
+
     balances[investor] = balances[investor].plus(amount);
 
     // This is a new investor

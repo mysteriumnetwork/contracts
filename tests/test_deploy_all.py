@@ -35,7 +35,7 @@ def fake_seed_investor(accounts):
 @pytest.fixture
 def everything_deployed(project, chain, web3, accounts, deploy_address):
     """Deploy our token plan."""
-    yaml_filename = os.path.join(os.path.dirname(__file__), "..", "crowdsales", "mysterium-kovan.yml")
+    yaml_filename = os.path.join(os.path.dirname(__file__), "..", "crowdsales", "mysterium-testrpc.yml")
     deployment_name = "kovan"
     chain_data = load_crowdsale_definitions(yaml_filename, deployment_name)
     runtime_data, statistics, contracts = _deploy_contracts(project, chain, web3, yaml_filename, chain_data, deploy_address)
