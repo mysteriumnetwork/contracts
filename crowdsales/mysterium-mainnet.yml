@@ -1,0 +1,222 @@
+kovan:
+
+    chain: kovan
+
+    verify_on_etherscan: yes
+
+    # Firefox 53b has an issue that prevents correct Selenium automated
+    # interaction with Etherscan form.
+    # http://stackoverflow.com/q/43175013/315168
+    browser_driver: chrome
+
+    #
+    # Contracts section defines different smart contracts that
+    # are required to run the ICO.
+    #
+    contracts:
+
+        # 4/5 vault for the sale funds
+        team_multisig_funds:
+            contract_name: MultiSigWallet
+            contract_file: GnosisWallet.sol
+            address: "0x7e6614722614e434c4df9901bab31e466ba12fa4"
+
+        # Foundation wallet for tokens
+        team_multisig_foundation:
+            contract_name: MultiSigWallet
+            contract_file: GnosisWallet.sol
+            address: "0xe18ce35060f39ed5c68b92629230aadcd79ea6e3"
+
+        #
+        # Token contract
+        #
+        # This contract represents ERC-20 token.
+        # It has transfer lock up functionality to prevent the token to be transferable
+        # until the ICO is over. Furthermore it has dynamic minting supply,
+        # so that the crowdsale contract will create new tokens as investment arrives in.
+        # This way, there is no need for a separate burn stage at the end of the crowdsale,
+        # as we never create the exceeding supply.
+        #
+        #
+        token:
+            contract_name: CrowdsaleToken
+            contract_file: CrowdsaleToken.sol
+            arguments:
+                _name: Muiresym
+                _symbol: TSYM
+                _initialSupply: 0
+                _decimals: 8
+        #
+        # Pricing strategy
+        #
+        pricing_strategy:
+            contract_name: MysteriumPricing
+            contract_file: MysteriumPricing.sol
+            arguments:
+                initialChfRate: "{{ 184 * 10000 }}"
+
+        #
+        # Intermediate vault to hold team funds for 2 weeks,
+        # then forwrads to funds wallet
+        #
+        intermediate_vault:
+            contract_name: IntermediateVault
+            contract_file: IntermediateVault.sol
+            arguments:
+                _teamMultisig: "{{ contracts.team_multisig_funds.address }}"
+                _unlockedAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 14*24*3600 }}"
+
+        #
+        # Seed vault 1 locked for 1 day
+        # (tokens claimable after owner releases the token)
+        #
+        seed_participant_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 1*24*3600 }}"
+
+        #
+        # Seed vault 2 locked for 12 months
+        #
+        seed_participant_vault_2:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 12*30*24*3600 }}"  # 12 months
+
+        #
+        # Founder vault holds founder tokens for 12 months.
+        # It
+        #
+        founders_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 1 }}"  # TODO
+
+        #
+        # Future funding vault 100% owner by foundation wallet,
+        # as set later
+        #
+        future_funding_vault:
+            contract_name: MultiVault
+            contract_file: MultiVault.sol
+            arguments:
+                _owner: "{{ deploy_address }}"
+                _freezeEndsAt: "{{ 1 }}"  # TODO
+
+        # Crowdsale
+        #
+        # This is the actual crowdsale contract.
+        # It will accept investments during the crowdsale time period.
+        # For each investments, it asks the pricing contract for the
+        # current price for this particular investor.
+        #
+        #
+        #
+        crowdsale:
+            contract_name: MysteriumCrowdsale
+            contract_file: MysteriumCrowdsale.sol
+            arguments:
+                _token: "{{contracts.token.address}}"
+                _pricingStrategy: "{{contracts.pricing_strategy.address}}"
+                _multisigWallet: "{{contracts.intermediate_vault.address}}"
+                _start: "{{ timestamp(datetime(2000, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
+                _end: "{{ timestamp(datetime(2017, 6, 30, 13, 00)) }}"
+        #
+        # At the end of the crowdsale
+        # sold tokens: 30%
+        # team tokens: 70%
+        #
+        token_distribution:
+            contract_name: MysteriumTokenDistribution
+            contract_file: MysteriumTokenDistribution.sol
+            arguments:
+                _token: "{{contracts.token.address}}"
+                _crowdsale: "{{contracts.crowdsale.address}}"
+                _mysteriumPricing: "{{contracts.pricing_strategy.address}}"
+
+    # Post-deployment actions connect contracts together.
+    post_actions: |
+
+        # Enable new token minting by a crowdsale contract
+        confirm_tx(token.transact({"from": deploy_address}).setMintAgent(crowdsale.address, True))
+
+        # Enable token mintint at the end of the crowdsale to create bonus pool, founder pool and such
+        confirm_tx(token.transact({"from": deploy_address}).setMintAgent(token_distribution.address, True))
+        confirm_tx(crowdsale.transact({"from": deploy_address}).setFinalizeAgent(token_distribution.address))
+
+        # Manual release token transfer at the end of the crowdsale
+        confirm_tx(token.transact({"from": deploy_address}).setReleaseAgent(deploy_address))
+
+        # Set token upgrade master to team multisig to give the new token path
+        confirm_tx(token.transact({"from": deploy_address}).setUpgradeMaster(team_multisig_funds.address))
+
+        # Allow pricing strategy to read crowdsale for the CHF rate chec
+        confirm_tx(pricing_strategy.transact({"from": deploy_address}).setCrowdsale(crowdsale.address))
+
+        # Allow test buys from these accounts before token sale begins
+        confirm_multiple_txs( \
+          crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist(deploy_address, True), \
+          crowdsale.transact({"from": deploy_address}).setEarlyParicipantWhitelist("0x1c5e4db864861D9b6203bd86Af0C0B5ffcD6115d", True), \
+        )
+
+        # Set token distribution model
+        confirm_tx( \
+            token_distribution.transact({"from": deploy_address}).setVaults( \
+                _futureRoundVault=future_funding_vault.address, \
+                _foundationWallet=team_multisig_foundation.address, \
+                _teamVault=founders_vault.address, \
+                _seedVault1=seed_participant_vault.address, \
+                _seedVault2=seed_participant_vault_2.address, \
+            ) \
+        )
+
+        #
+        # Set vault crowdsale data
+        #
+        confirm_multiple_txs( \
+            seed_participant_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            seed_participant_vault_2.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            future_funding_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+            founders_vault.transact({"from": deploy_address}).setCrowdsale(crowdsale.address), \
+        )
+
+        #
+        # Load vault participant data
+        #
+
+        # Founders vault goes 100% to team multisig
+        confirm_multiple_txs( \
+          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
+          future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
+        )
+
+        #
+        # Seed vault data is loaded after the deployment is done
+        #
+
+        # Do not load during the deployment. Takes 33 txs that may risk the deployment. Load separately.
+        # Seed vault 1
+        # confirm_multiple_txs(*load_investor_data(seed_participant_vault, deploy_address, "fake_seed_investor_data.csv"))
+
+        # Seed vault 2
+        # TODO - using a test value as one address
+        # confirm_multiple_txs(*load_investor_data(seed_participant_vault_2, deploy_address, "fake_seed_investor_data.csv"))
+
+    # Sanity check
+    verify_actions: |
+        assert token.call().owner().lower() == deploy_address.lower()
+        assert crowdsale.call().owner().lower() == deploy_address.lower()
+        assert crowdsale.call().multisigWallet().lower() == intermediate_vault.address.lower()
+        assert token_distribution.call().isSane()
+        assert crowdsale.call().getState() in (CrowdsaleState.PreFunding, CrowdsaleState.Funding)
+
+        # As the last action, after successful deployment, set the right token symbol and name so that it shows in a blockchain explorer
+        confirm_tx(token.transact({"from": deploy_address}).setTokenInformation("Xterium", "XST"))
+
+
