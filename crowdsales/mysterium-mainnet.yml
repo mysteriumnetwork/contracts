@@ -1,6 +1,6 @@
-kovan:
+mainnet:
 
-    chain: kovan
+    chain: mainnet
 
     verify_on_etherscan: yes
 
@@ -25,7 +25,7 @@ kovan:
         team_multisig_foundation:
             contract_name: MultiSigWallet
             contract_file: GnosisWallet.sol
-            address: "0xe18ce35060f39ed5c68b92629230aadcd79ea6e3"
+            address: "0xE18cE35060f39eD5c68B92629230aadcD79eA6E3"
 
         #
         # Token contract
@@ -64,10 +64,11 @@ kovan:
             contract_file: IntermediateVault.sol
             arguments:
                 _teamMultisig: "{{ contracts.team_multisig_funds.address }}"
-                _unlockedAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 14*24*3600 }}"
+                _unlockedAt: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 14*24*3600 }}"
 
         #
-        # Seed vault 1 locked for 1 day
+        # Seed vault 1 locked for 2 days.
+        # 2 days is nomimal time.
         # (tokens claimable after owner releases the token)
         #
         seed_participant_vault:
@@ -75,7 +76,7 @@ kovan:
             contract_file: MultiVault.sol
             arguments:
                 _owner: "{{ deploy_address }}"
-                _freezeEndsAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 1*24*3600 }}"
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 2*24*3600 }}"
 
         #
         # Seed vault 2 locked for 12 months
@@ -85,7 +86,7 @@ kovan:
             contract_file: MultiVault.sol
             arguments:
                 _owner: "{{ deploy_address }}"
-                _freezeEndsAt: "{{ timestamp(datetime(2017, 4, 30, 13, 00)) + 12*30*24*3600 }}"  # 12 months
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 12*30*24*3600 }}"  # 12 months
 
         #
         # Founder vault holds founder tokens for 12 months.
@@ -96,7 +97,7 @@ kovan:
             contract_file: MultiVault.sol
             arguments:
                 _owner: "{{ deploy_address }}"
-                _freezeEndsAt: "{{ 1 }}"  # TODO
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 12*30*24*3600  }}"
 
         #
         # Future funding vault 100% owner by foundation wallet,
@@ -107,7 +108,7 @@ kovan:
             contract_file: MultiVault.sol
             arguments:
                 _owner: "{{ deploy_address }}"
-                _freezeEndsAt: "{{ 1 }}"  # TODO
+                _freezeEndsAt: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 12*30*24*3600  }}"
 
         # Crowdsale
         #
@@ -124,9 +125,9 @@ kovan:
             arguments:
                 _token: "{{contracts.token.address}}"
                 _pricingStrategy: "{{contracts.pricing_strategy.address}}"
-                _multisigWallet: "{{contracts.intermediate_vault.address}}"
-                _start: "{{ timestamp(datetime(2000, 5, 30, 13, 00)) }}"  # TODO: non-final testing time
-                _end: "{{ timestamp(datetime(2017, 6, 30, 13, 00)) }}"
+                _multisigWallet: "{{contracts.intermediate_vault.address}}"  # We lock up funds for 2 weeks
+                _start: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) }}"
+                _end: "{{ timestamp(datetime(2017, 5, 30, 13, 00)) + 14*24*3600 }}"
         #
         # At the end of the crowdsale
         # sold tokens: 30%
@@ -190,9 +191,8 @@ kovan:
         # Load vault participant data
         #
 
-        # Founders vault goes 100% to team multisig
+        # Future funding vault goes 100% to foundation address
         confirm_multiple_txs( \
-          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
           future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
         )
 
@@ -208,6 +208,11 @@ kovan:
         # TODO - using a test value as one address
         # confirm_multiple_txs(*load_investor_data(seed_participant_vault_2, deploy_address, "fake_seed_investor_data.csv"))
 
+        #
+        # Founder vault
+        # TODO
+        #
+
     # Sanity check
     verify_actions: |
         assert token.call().owner().lower() == deploy_address.lower()
@@ -216,7 +221,11 @@ kovan:
         assert token_distribution.call().isSane()
         assert crowdsale.call().getState() in (CrowdsaleState.PreFunding, CrowdsaleState.Funding)
 
+        # Do a test buy
+        confirm_tx(crowdsale.transact({"from": deploy_address, "value": to_wei("0.01", "ether")}).buy())
+
         # As the last action, after successful deployment, set the right token symbol and name so that it shows in a blockchain explorer
-        confirm_tx(token.transact({"from": deploy_address}).setTokenInformation("Xterium", "XST"))
+        confirm_tx(token.transact({"from": deploy_address}).setTokenInformation("Mysterium", "MYST"))
+
 
 

@@ -2,7 +2,7 @@ kovan:
 
     chain: kovan
 
-    verify_on_etherscan: no
+    verify_on_etherscan: yes
 
     # Firefox 53b has an issue that prevents correct Selenium automated
     # interaction with Etherscan form.
