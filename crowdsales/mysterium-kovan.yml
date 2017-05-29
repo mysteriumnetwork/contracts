@@ -148,9 +148,9 @@ kovan:
 
         # Set token distribution model
         confirm_tx( \
-            token_distribution.transact().setVaults( \
+            token_distribution.transact({"from": deploy_address}).setVaults( \
                 _futureRoundVault=future_funding_vault.address, \
-                _foundationVault=founders_vault.address, \
+                _foundationWallet=team_multisig_foundation.address, \
                 _teamVault=founders_vault.address, \
                 _seedVault1=seed_participant_vault.address, \
                 _seedVault2=seed_participant_vault.address, \
@@ -162,14 +162,14 @@ kovan:
         #
 
         # Founders vault goes 100% to team multisig
-        confirm_multiple_txs(
-          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100),
-          future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100),
+        confirm_multiple_txs( \
+          founders_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
+          future_funding_vault.transact({"from": deploy_address}).addInvestor(team_multisig_foundation.address, 100), \
         )
 
     # Sanity check
     verify_actions: |
-        assert token.call().owner().lower() == team_multisig_funds.address.lower()
+        assert token.call().owner().lower() == deploy_address.lower()
         assert crowdsale.call().owner().lower() == deploy_address.lower()
         assert crowdsale.call().multisigWallet().lower() == intermediate_vault.address.lower()
         assert token_distribution.call().isSane()
