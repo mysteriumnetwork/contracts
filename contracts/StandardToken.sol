@@ -42,7 +42,7 @@ contract StandardToken is ERC20, SafeMath {
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint _value) onlyPayloadSize(3 * 32) returns (bool success) {
+  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
     uint _allowance = allowed[_from][msg.sender];
 
     // Check is not needed because safeSub(_allowance, _value) will already throw if this condition is not met
