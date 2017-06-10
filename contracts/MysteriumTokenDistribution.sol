@@ -71,36 +71,11 @@ contract MysteriumTokenDistribution is FinalizeAgent, Ownable {
     seed_coins_vault1 = 122400000000000;
     seed_coins_vault2 = 489600000000000;
 
-    if(future_round_coins > 0) {
-      token.mint(futureRoundVault, future_round_coins);
-    }
-
-    if(foundation_coins > 0) {
-      token.mint(foundationWallet, foundation_coins);
-    }
-
-    if(team_coins > 0) {
-      token.mint(teamVault, team_coins);
-    }
-
-    if(seed_coins_vault1 > 0) {
-      token.mint(seedVault1, seed_coins_vault1);
-    }
-
-    if(seed_coins_vault2 > 0) {
-      token.mint(seedVault2, seed_coins_vault2);
-    }
-
-    // Then divide with multiplier
-    //earlybird_coins = earlybird_coins / multiplier;
-    //regular_coins = regular_coins / multiplier;
-    //seed_coins = seed_coins / multiplier;
-    //future_round_coins = future_round_coins / multiplier;
-    //foundation_coins = foundation_coins / multiplier;
-    //team_coins = team_coins / multiplier;
-    //total_coins = total_coins / multiplier;
-    //seed_coins_vault1 = seed_coins_vault1  / multiplier;
-    //seed_coins_vault2 = seed_coins_vault2 / multiplier;
+    token.mint(futureRoundVault, future_round_coins);
+    token.mint(foundationWallet, foundation_coins);
+    token.mint(teamVault, team_coins);
+    token.mint(seedVault1, seed_coins_vault1);
+    token.mint(seedVault2, seed_coins_vault2);
   }
 
   /// @dev Here you can set all the Vaults
