@@ -1,0 +1,47 @@
+
+chain: kovan
+
+verify_on_etherscan: no  
+
+    # Firefox 53b has an issue that prevents correct Selenium automated
+    # interaction with Etherscan form.
+    # http://stackoverflow.com/q/43175013/315168
+browser_driver: chrome
+
+    #
+    # Contracts section defines different smart contracts that
+    # are required to run the ICO.
+    #
+contracts:
+
+  seed_participant_vault: !!omap
+  - contract_name: MultiVault
+  - contract_file: MultiVault.sol
+  - arguments: !!omap
+    - _owner: '0x001FC7d7E506866aEAB82C11dA515E9DD6D02c25'
+    - _freezeEndsAt: 1
+  - address: '0x5d06eb01470e092bde03f64d6b7acfdb053add06'
+  - constructor_args: '0x000000000000000000000000001fc7d7e506866aeab82c11da515e9dd6d02c250000000000000000000000000000000000000000000000000000000000000001'
+  - libraries:
+      SafeMathLib: '0x9d54f56c55663efd8e0d9f73f1d7c3a9330606fb'
+  seed_participant_vault_2: !!omap
+  - contract_name: MultiVault
+  - contract_file: MultiVault.sol
+  - arguments: !!omap
+    - _owner: '0x001FC7d7E506866aEAB82C11dA515E9DD6D02c25'
+    - _freezeEndsAt: 1528391820
+  - address: '0x5d06eb01470e092bde03f64d6b7acfdb053add06'
+  - constructor_args: '0x000000000000000000000000001fc7d7e506866aeab82c11da515e9dd6d02c25000000000000000000000000000000000000000000000000000000005b19688c'
+  - libraries:
+      SafeMathLib: '0x9d54f56c55663efd8e0d9f73f1d7c3a9330606fb'
+  founders: !!omap
+  - contract_name: MultiVault
+  - contract_file: MultiVault.sol
+  - arguments: !!omap
+    - _owner: '0x001FC7d7E506866aEAB82C11dA515E9DD6D02c25'
+    - _freezeEndsAt: 1528391864
+  - address: '0x5d06eb01470e092bde03f64d6b7acfdb053add06'
+  - constructor_args: '0x000000000000000000000000001fc7d7e506866aeab82c11da515e9dd6d02c25000000000000000000000000000000000000000000000000000000005b1968b8'
+  - libraries:
+      SafeMathLib: '0x9d54f56c55663efd8e0d9f73f1d7c3a9330606fb'
+deploy_address: '0x001FC7d7E506866aEAB82C11dA515E9DD6D02c25'

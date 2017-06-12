@@ -1,0 +1,42 @@
+
+chain: mainnet
+
+verify_on_etherscan: yes 
+
+    # Firefox 53b has an issue that prevents correct Selenium automated
+    # interaction with Etherscan form.
+    # http://stackoverflow.com/q/43175013/315168
+browser_driver: chrome
+
+    #
+    # Contracts section defines different smart contracts that
+    # are required to run the ICO.
+    #
+contracts:
+
+#        seed_participant_vault:
+#            contract_name: MultiVault
+#            contract_file: MultiVault.sol
+#            arguments:
+#                _owner: "{{ deploy_address }}"
+#                _freezeEndsAt: "{{ 1 }}"  # TODO
+
+#        seed_participant_vault_2:
+#            contract_name: MultiVault
+#            contract_file: MultiVault.sol
+#            arguments:
+#                _owner: "{{ deploy_address }}"
+#                _freezeEndsAt: "{{ time() + 12*30*24*3600 }}"  # 12 months
+
+  founders: !!omap
+  - contract_name: MultiVault
+  - contract_file: MultiVault.sol
+  - arguments: !!omap
+    - _owner: '0x6efD5665ab4B345A7eBE63c679b651f375DDdB7E'
+    - _freezeEndsAt: 1528397739
+  - address: '0x33222541eae599124df510d02f6e70dada1a9331'
+  - constructor_args: '0x0000000000000000000000006efd5665ab4b345a7ebe63c679b651f375dddb7e000000000000000000000000000000000000000000000000000000005b197fab'
+  - libraries:
+      SafeMathLib: '0x790d13e76b2c727086018842af947408e371868f'
+  - etherscan_link: https://etherscan.io/address/0x33222541eae599124df510d02f6e70dada1a9331
+deploy_address: '0x6efD5665ab4B345A7eBE63c679b651f375DDdB7E'
