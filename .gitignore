@@ -74,8 +74,8 @@ registrar.json
 *.ipynb
 
 # Crowdsale definitions
-crowdsales/*.yml
-*.csv
+#crowdsales/*.yml
+#*.csv
 
 contracts/PreICOProxyBuyer.sol
 tests
