@@ -1,0 +1,28 @@
+
+chain: mainnet
+
+verify_on_etherscan: yes 
+
+    # Firefox 53b has an issue that prevents correct Selenium automated
+    # interaction with Etherscan form.
+    # http://stackoverflow.com/q/43175013/315168
+browser_driver: chrome
+
+    #
+    # Contracts section defines different smart contracts that
+    # are required to run the ICO.
+    #
+contracts:
+  token_distribution: !!omap
+  - contract_name: MysteriumTokenDistribution
+  - contract_file: MysteriumTokenDistribution.sol
+  - arguments: !!omap
+    - _token: '0xa645264C5603E96c3b0B078cdab68733794B0A71'
+    - _crowdsale: '0xE7E01BABb53c98f8d84d05dFff64Ebb63ed37bF5'
+    - _mysteriumPricing: '0xD2B34DE9882923dF7a97fbE37F15Ba7c2E3DEEFD'
+  - address: '0x25cdc41bf2c88e0b6ece3b922eb74c7169cd3df4'
+  - constructor_args: '0x000000000000000000000000a645264c5603e96c3b0b078cdab68733794b0a71000000000000000000000000e7e01babb53c98f8d84d05dfff64ebb63ed37bf5000000000000000000000000d2b34de9882923df7a97fbe37f15ba7c2e3deefd'
+  - libraries:
+      SafeMathLib: '0x790d13e76b2c727086018842af947408e371868f'
+  - etherscan_link: https://etherscan.io/address/0x25cdc41bf2c88e0b6ece3b922eb74c7169cd3df4
+deploy_address: '0x6efD5665ab4B345A7eBE63c679b651f375DDdB7E'
